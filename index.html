@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WK Poul 2026</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@400;700;800;900&family=Funnel+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- LOGIN SCHERM -->
+  <div id="login-screen" class="screen active">
+    <div class="login-container">
+      <div class="login-header">
+        <div class="kicker">FIFA Wereldkampioenschap</div>
+        <h1 class="hero-title">WK<br><span class="year">2026</span></h1>
+        <div class="hero-subtitle">VS, Canada en Mexico, 11 juni tot 19 juli</div>
+      </div>
+      
+      <div class="login-card">
+        <h2 id="pool-name-display">WK Poul</h2>
+        <p class="login-desc">Voer je naam in om mee te doen aan de poul</p>
+        <form id="login-form">
+          <input type="text" id="name-input" placeholder="Jouw naam" required maxlength="30" autocomplete="off">
+          <button type="submit" class="btn-primary">Doe mee</button>
+        </form>
+        <p class="login-hint">Tip: gebruik dezelfde naam als je opnieuw inlogt op een ander apparaat om je voorspellingen te zien.</p>
+      </div>
+      
+      <div class="rules-preview">
+        <h3>Puntentelling</h3>
+        <div class="rules-grid">
+          <div class="rule-item"><span class="points">5</span><span>Exacte uitslag</span></div>
+          <div class="rule-item"><span class="points">3</span><span>Juist doelsaldo</span></div>
+          <div class="rule-item"><span class="points">1</span><span>Juiste winnaar</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HOOFDAPP -->
+  <div id="main-app" class="screen">
+    <header class="app-header">
+      <div class="header-content">
+        <div class="brand">
+          <div class="brand-mark">WK<span class="brand-year">26</span></div>
+          <div class="brand-pool" id="pool-name-header">Poul</div>
+        </div>
+        <div class="user-info">
+          <span id="current-user-name"></span>
+          <button id="logout-btn" class="btn-ghost">Uitloggen</button>
+        </div>
+      </div>
+      <nav class="tabs">
+        <button class="tab active" data-view="matches">Wedstrijden</button>
+        <button class="tab" data-view="leaderboard">Ranglijst</button>
+        <button class="tab" data-view="standings">Groepen</button>
+        <button class="tab" data-view="admin">Beheer</button>
+      </nav>
+    </header>
+
+    <main class="app-main">
+      <!-- Status banner -->
+      <div id="status-banner" class="status-banner"></div>
+
+      <!-- WEDSTRIJDEN VIEW -->
+      <section id="view-matches" class="view active">
+        <div class="view-header">
+          <div>
+            <h2 class="view-title">Voorspellingen</h2>
+            <p class="view-sub" id="predictions-summary">Vul je voorspellingen in voor elke wedstrijd</p>
+          </div>
+          <div class="filter-group">
+            <label for="group-filter">Filter</label>
+            <select id="group-filter">
+              <option value="all">Alle groepen</option>
+              <option value="A">Groep A</option>
+              <option value="B">Groep B</option>
+              <option value="C">Groep C</option>
+              <option value="D">Groep D</option>
+              <option value="E">Groep E</option>
+              <option value="F">Groep F (Nederland)</option>
+              <option value="G">Groep G</option>
+              <option value="H">Groep H</option>
+              <option value="I">Groep I</option>
+              <option value="J">Groep J</option>
+              <option value="K">Groep K</option>
+              <option value="L">Groep L</option>
+            </select>
+          </div>
+        </div>
+        <div id="matches-container" class="matches-container"></div>
+      </section>
+
+      <!-- LEADERBOARD VIEW -->
+      <section id="view-leaderboard" class="view">
+        <div class="view-header">
+          <div>
+            <h2 class="view-title">Ranglijst</h2>
+            <p class="view-sub">Wie heeft de meeste punten?</p>
+          </div>
+        </div>
+        <div id="leaderboard-container" class="leaderboard-container"></div>
+      </section>
+
+      <!-- STANDINGS VIEW -->
+      <section id="view-standings" class="view">
+        <div class="view-header">
+          <div>
+            <h2 class="view-title">Groepsstanden</h2>
+            <p class="view-sub">Live standen op basis van officiele uitslagen</p>
+          </div>
+        </div>
+        <div id="standings-container" class="standings-container"></div>
+      </section>
+
+      <!-- ADMIN VIEW -->
+      <section id="view-admin" class="view">
+        <div class="view-header">
+          <div>
+            <h2 class="view-title">Beheer</h2>
+            <p class="view-sub">Vul officiele uitslagen in (alleen voor beheerder)</p>
+          </div>
+        </div>
+        <div id="admin-unlock" class="admin-unlock">
+          <p>Beheerderwachtwoord:</p>
+          <form id="admin-form">
+            <input type="password" id="admin-password" placeholder="Wachtwoord">
+            <button type="submit" class="btn-primary">Open beheer</button>
+          </form>
+        </div>
+        <div id="admin-panel" class="admin-panel" style="display:none;">
+          <div class="admin-notice">
+            <strong>Let op:</strong> uitslagen die je hier invoert tellen voor de poul. Iedere verandering wordt direct gesynchroniseerd.
+          </div>
+          <div id="admin-matches-container"></div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="app-footer">
+      <span>WK Poul 2026, gemaakt met Firebase en GitHub Pages</span>
+      <span id="connection-status" class="status-dot"></span>
+    </footer>
+  </div>
+
+  <!-- App scripts -->
+  <script type="module" src="app.js"></script>
+</body>
+</html>

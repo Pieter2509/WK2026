@@ -2,80 +2,46 @@
 // Auto-sync uitslagen van openfootball/worldcup.json
 // Gratis, open data, geen API-key nodig, public domain (CC0)
 // Bron: https://github.com/openfootball/worldcup.json
+//
+// Sinds we Engels intern gebruiken, is matching nu rechtstreeks.
+// Alleen kleine aliases nodig voor variaties in spelling.
 // ================================================================
 
-import { MATCHES } from "./data.js";
+import { MATCHES, TEAMS } from "./data.js";
 
 const OPENFOOTBALL_URL = "https://raw.githubusercontent.com/openfootball/worldcup.json/master/2026/worldcup.json";
 
-// Mapping van openfootball team namen (Engels) naar onze Nederlandse namen
-// Sommige teams hebben meerdere mogelijke namen in de bron
-const TEAM_MAP = {
-  "Mexico": "Mexico",
-  "South Africa": "Zuid-Afrika",
-  "South Korea": "Zuid-Korea",
-  "Korea Republic": "Zuid-Korea",
-  "Czech Republic": "Tsjechië",
-  "Czechia": "Tsjechië",
-  "Canada": "Canada",
-  "Switzerland": "Zwitserland",
-  "Qatar": "Qatar",
-  "Bosnia and Herzegovina": "Bosnië en Herzegovina",
-  "Bosnia-Herzegovina": "Bosnië en Herzegovina",
-  "Brazil": "Brazilië",
-  "Morocco": "Marokko",
-  "Scotland": "Schotland",
-  "Haiti": "Haïti",
-  "United States": "Verenigde Staten",
-  "USA": "Verenigde Staten",
-  "Paraguay": "Paraguay",
-  "Australia": "Australië",
-  "Türkiye": "Turkije",
-  "Turkey": "Turkije",
-  "Turkiye": "Turkije",
-  "Germany": "Duitsland",
-  "Ecuador": "Ecuador",
-  "Ivory Coast": "Ivoorkust",
-  "Côte d'Ivoire": "Ivoorkust",
-  "Cote d'Ivoire": "Ivoorkust",
-  "Curaçao": "Curaçao",
-  "Curacao": "Curaçao",
-  "Netherlands": "Nederland",
-  "Japan": "Japan",
-  "Sweden": "Zweden",
-  "Tunisia": "Tunesië",
-  "Belgium": "België",
-  "Egypt": "Egypte",
-  "Iran": "Iran",
-  "New Zealand": "Nieuw-Zeeland",
-  "Spain": "Spanje",
-  "Uruguay": "Uruguay",
-  "Saudi Arabia": "Saoedi-Arabië",
-  "Cape Verde": "Kaapverdië",
-  "Cabo Verde": "Kaapverdië",
-  "France": "Frankrijk",
-  "Senegal": "Senegal",
-  "Norway": "Noorwegen",
-  "Iraq": "Irak",
-  "Argentina": "Argentinië",
-  "Austria": "Oostenrijk",
-  "Algeria": "Algerije",
-  "Jordan": "Jordanië",
-  "Portugal": "Portugal",
-  "Colombia": "Colombia",
-  "Uzbekistan": "Oezbekistan",
-  "DR Congo": "DR Congo",
-  "Congo DR": "DR Congo",
-  "Democratic Republic of Congo": "DR Congo",
-  "England": "Engeland",
-  "Croatia": "Kroatië",
-  "Panama": "Panama",
-  "Ghana": "Ghana",
+// Aliases: variaties die openfootball mogelijk gebruikt -> onze canonieke naam
+// Direct gematchte namen hoeven niet in deze map (bv "Netherlands" -> "Netherlands")
+const ALIASES = {
+  "Korea Republic":              "South Korea",
+  "Korea, South":                "South Korea",
+  "Czech Republic":              "Czechia",
+  "Turkey":                      "Türkiye",
+  "Turkiye":                     "Türkiye",
+  "USA":                         "United States",
+  "United States of America":    "United States",
+  "Côte d'Ivoire":               "Ivory Coast",
+  "Cote d'Ivoire":               "Ivory Coast",
+  "Cabo Verde":                  "Cape Verde",
+  "Congo DR":                    "DR Congo",
+  "DR Congo":                    "DR Congo",
+  "Democratic Republic of Congo":"DR Congo",
+  "Bosnia-Herzegovina":          "Bosnia and Herzegovina",
+  "Bosnia & Herzegovina":        "Bosnia and Herzegovina",
+  "Curacao":                     "Curaçao",
 };
 
-function mapTeam(name) {
+// Normaliseer een naam naar onze canonieke vorm
+function normalizeTeam(name) {
   if (!name) return null;
-  return TEAM_MAP[name] || TEAM_MAP[name.trim()] || null;
+  const trimmed = name.trim();
+  // Direct match in TEAMS? Klaar.
+  if (TEAMS[trimmed]) return trimmed;
+  // Alias? Vertaal door.
+  if (ALIASES[trimmed]) return ALIASES[trimmed];
+  // Onbekend
+  return null;
 }
 
 // Haal de openfootball data op
@@ -92,25 +58,24 @@ export async function fetchOfficialResults() {
 export function matchOpenfootballToInternal(ofMatch) {
   if (!ofMatch.score || !ofMatch.score.ft) return null;
 
-  const ofTeam1 = mapTeam(ofMatch.team1);
-  const ofTeam2 = mapTeam(ofMatch.team2);
-  if (!ofTeam1 || !ofTeam2) return null;
+  const team1 = normalizeTeam(ofMatch.team1);
+  const team2 = normalizeTeam(ofMatch.team2);
+  if (!team1 || !team2) return null;
 
   const [ft1, ft2] = ofMatch.score.ft;
   if (ft1 == null || ft2 == null) return null;
 
   // Zoek onze wedstrijd waar deze twee teams tegen elkaar spelen
-  // (volgorde maakt niet uit, we leiden zelf de home/away af)
   const internalMatch = MATCHES.find((m) =>
-    (m.home === ofTeam1 && m.away === ofTeam2) ||
-    (m.home === ofTeam2 && m.away === ofTeam1)
+    (m.home === team1 && m.away === team2) ||
+    (m.home === team2 && m.away === team1)
   );
 
   if (!internalMatch) return null;
 
   // Bepaal welk team home/away is in onze data
   let home, away;
-  if (internalMatch.home === ofTeam1) {
+  if (internalMatch.home === team1) {
     home = ft1;
     away = ft2;
   } else {

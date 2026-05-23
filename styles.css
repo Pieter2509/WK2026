@@ -49,8 +49,8 @@ body {
   background-attachment: fixed;
 }
 
-.screen { display: none; }
-.screen.active { display: block; }
+.screen { display: none !important; }
+.screen.active { display: block !important; }
 
 /* ================================================================
    LOADING SCREEN
@@ -63,7 +63,7 @@ body {
   padding: 24px;
 }
 
-#loading-screen.active { display: flex; }
+#loading-screen.active { display: flex !important; }
 
 .loading-container {
   display: flex;
@@ -104,13 +104,12 @@ body {
 
 #login-screen {
   min-height: 100vh;
-  display: flex;
   align-items: center;
   justify-content: center;
   padding: 24px 20px;
 }
 
-#login-screen.active { display: flex; }
+#login-screen.active { display: flex !important; }
 
 .login-container {
   max-width: 480px;

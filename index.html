@@ -10,8 +10,16 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+  <!-- LAADSCHERM (wordt direct getoond als er een opgeslagen sessie is) -->
+  <div id="loading-screen" class="screen">
+    <div class="loading-container">
+      <div class="loading-mark">WK<span class="loading-year">26</span></div>
+      <div class="loading-spinner"></div>
+    </div>
+  </div>
+
   <!-- LOGIN SCHERM -->
-  <div id="login-screen" class="screen active">
+  <div id="login-screen" class="screen">
     <div class="login-container">
       <div class="login-header">
         <div class="kicker">FIFA Wereldkampioenschap</div>
@@ -152,6 +160,19 @@
       <span id="connection-status" class="status-dot"></span>
     </footer>
   </div>
+
+  <!-- Pre-render: kies meteen welk scherm getoond moet worden, voorkomt login-flash -->
+  <script>
+    (function() {
+      try {
+        var saved = localStorage.getItem("wk2026-user");
+        var screenId = saved ? "loading-screen" : "login-screen";
+        document.getElementById(screenId).classList.add("active");
+      } catch (e) {
+        document.getElementById("login-screen").classList.add("active");
+      }
+    })();
+  </script>
 
   <!-- App scripts -->
   <script type="module" src="app.js"></script>

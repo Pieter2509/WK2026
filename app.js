@@ -18,7 +18,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js";
 
 import { firebaseConfig, POOL_NAME, ADMIN_PASSWORD, PREDICTION_DEADLINE } from "./config.js";
-import { GROUPS, FLAGS, MATCHES, calculatePoints, SCORING } from "./data.js";
+import { GROUPS, TEAMS, FLAGS, MATCHES, calculatePoints, SCORING, teamName, teamFlag } from "./data.js";
 import { syncResults } from "./autosync.js";
 
 // ================================================================
@@ -261,8 +261,7 @@ function logout() {
   state.currentUser = null;
   state.predictions = {};
   state.isAdmin = false;
-  document.getElementById("login-screen").classList.add("active");
-  document.getElementById("main-app").classList.remove("active");
+  showScreen("login-screen");
 }
 
 function tryAutoLogin() {
@@ -553,7 +552,7 @@ function renderMatchesView() {
       <div class="group-section">
         <div class="group-header">
           <h3>${groupData.name}</h3>
-          <span class="group-teams">${groupData.teams.map(t => FLAGS[t] || '').join(' ')}</span>
+          <span class="group-teams">${groupData.teams.map(t => teamFlag(t)).join(' ')}</span>
         </div>
         <div class="match-list">
           ${groupMatches.map(m => renderMatchCard(m)).join("")}
@@ -609,7 +608,7 @@ function renderMatchCard(match) {
       </div>
       <div class="match-teams">
         <div class="team team-home">
-          <span>${match.home}</span>
+          <span>${teamName(match.home)}</span>
           <span class="team-flag">${homeFlag}</span>
         </div>
         <div class="score-input-group">
@@ -621,7 +620,7 @@ function renderMatchCard(match) {
         </div>
         <div class="team team-away">
           <span class="team-flag">${awayFlag}</span>
-          <span>${match.away}</span>
+          <span>${teamName(match.away)}</span>
         </div>
       </div>
       ${statusHtml}
@@ -810,7 +809,7 @@ function renderStandings() {
           <tbody>
             ${standings.map((s, i) => `
               <tr class="${i < 2 ? 'qualified' : ''}">
-                <td class="team-cell">${FLAGS[s.team] || ''} ${s.team}</td>
+                <td class="team-cell">${teamFlag(s.team)} ${teamName(s.team)}</td>
                 <td>${s.P}</td>
                 <td>${s.W}</td>
                 <td>${s.D}</td>
@@ -887,8 +886,8 @@ function renderAdmin() {
                 </div>
                 <div class="match-teams">
                   <div class="team team-home">
-                    <span>${m.home}</span>
-                    <span class="team-flag">${FLAGS[m.home] || ''}</span>
+                    <span>${teamName(m.home)}</span>
+                    <span class="team-flag">${teamFlag(m.home)}</span>
                   </div>
                   <div class="score-input-group">
                     <input type="number" min="0" max="20" class="score-input admin-result-input" 
@@ -898,8 +897,8 @@ function renderAdmin() {
                            data-side="away" data-match-id="${m.id}" value="${a}">
                   </div>
                   <div class="team team-away">
-                    <span class="team-flag">${FLAGS[m.away] || ''}</span>
-                    <span>${m.away}</span>
+                    <span class="team-flag">${teamFlag(m.away)}</span>
+                    <span>${teamName(m.away)}</span>
                   </div>
                 </div>
                 <div class="match-status">
@@ -998,9 +997,15 @@ function renderCurrentView() {
 // INIT
 // ================================================================
 
+function showScreen(screenId) {
+  ["login-screen", "loading-screen", "main-app"].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.classList.toggle("active", id === screenId);
+  });
+}
+
 function showMainApp() {
-  document.getElementById("login-screen").classList.remove("active");
-  document.getElementById("main-app").classList.add("active");
+  showScreen("main-app");
   document.getElementById("current-user-name").textContent = state.currentUser.name;
   document.getElementById("pool-name-header").textContent = POOL_NAME;
 
@@ -1101,8 +1106,14 @@ function init() {
   // Auto login als opgeslagen sessie geldig is
   const saved = tryAutoLogin();
   if (saved) {
+    // Loading-screen is al actief via inline script in HTML
     resumeSession(saved).then((ok) => {
-      if (ok) showMainApp();
+      if (ok) {
+        showMainApp();
+      } else {
+        // Sessie niet geldig, val terug op loginscherm
+        showScreen("login-screen");
+      }
     });
   }
 }

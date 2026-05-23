@@ -9,8 +9,11 @@ import {
   doc,
   setDoc,
   getDoc,
+  getDocs,
   onSnapshot,
   collection,
+  query,
+  where,
   serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js";
 
@@ -114,12 +117,97 @@ function setConnectionStatus(connected) {
 }
 
 // ================================================================
-// AUTH (simpele naam gebaseerde login)
+// AUTH (naam + wachtwoord login)
 // ================================================================
 
-async function login(name) {
+// Hash een wachtwoord met salt via Web Crypto API (SHA-256)
+async function hashPassword(password, salt) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(password + salt);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(hashBuffer))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+// Genereer random salt
+function generateSalt() {
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  return Array.from(bytes).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+// Zoek alle users met deze displayName (case insensitive)
+async function findUsersByName(name) {
+  const nameLower = name.toLowerCase().trim();
+  const q = query(collection(db, "users"), where("displayNameLower", "==", nameLower));
+  const snap = await getDocs(q);
+  const users = [];
+  snap.forEach((d) => users.push({ id: d.id, ...d.data() }));
+  return users;
+}
+
+// Genereer een unieke userId op basis van slugified naam
+// Als "joep" al bestaat: "joep-2", "joep-3", etc.
+async function generateUniqueUserId(name) {
+  const base = slugify(name);
+  if (!base) throw new Error("Naam bevat geen geldige tekens");
+
+  // Probeer base, dan base-2, base-3, etc.
+  for (let i = 1; i < 100; i++) {
+    const candidate = i === 1 ? base : `${base}-${i}`;
+    const existing = await getDoc(doc(db, "users", candidate));
+    if (!existing.exists()) return candidate;
+  }
+  throw new Error("Te veel gebruikers met deze naam");
+}
+
+// Login: bestaande gebruiker
+async function loginUser(name, password) {
   if (!firebaseReady) {
-    showBanner("Firebase is nog niet geconfigureerd. Lees de README.", "error", 0);
+    showBanner("Firebase is nog niet geconfigureerd", "error", 0);
+    return false;
+  }
+  if (name.trim().length < 2) {
+    showBanner("Naam moet minstens 2 tekens hebben", "error");
+    return false;
+  }
+  if (!password) {
+    showBanner("Vul je wachtwoord in", "error");
+    return false;
+  }
+
+  try {
+    const users = await findUsersByName(name);
+    if (users.length === 0) {
+      showBanner("Geen account met deze naam. Klik op 'Nieuw account' om je te registreren.", "error", 5000);
+      return false;
+    }
+
+    // Probeer elk account met deze naam
+    for (const user of users) {
+      if (!user.passwordHash || !user.salt) continue;
+      const hash = await hashPassword(password, user.salt);
+      if (hash === user.passwordHash) {
+        // Match!
+        state.currentUser = { key: user.id, name: user.displayName };
+        localStorage.setItem("wk2026-user", JSON.stringify(state.currentUser));
+        return true;
+      }
+    }
+
+    showBanner("Wachtwoord onjuist", "error");
+    return false;
+  } catch (err) {
+    console.error("Login mislukt:", err);
+    showBanner("Inloggen mislukt: " + err.message, "error", 0);
+    return false;
+  }
+}
+
+// Registreer: nieuwe gebruiker
+async function registerUser(name, password) {
+  if (!firebaseReady) {
+    showBanner("Firebase is nog niet geconfigureerd", "error", 0);
     return false;
   }
 
@@ -128,38 +216,36 @@ async function login(name) {
     showBanner("Naam moet minstens 2 tekens hebben", "error");
     return false;
   }
-
-  const key = slugify(cleanName);
-  if (!key) {
-    showBanner("Naam bevat geen geldige tekens", "error");
+  if (!password || password.length < 4) {
+    showBanner("Wachtwoord moet minstens 4 tekens hebben", "error");
     return false;
   }
 
   try {
-    // Maak of update gebruiker doc
-    const userRef = doc(db, "users", key);
-    const existing = await getDoc(userRef);
+    const userId = await generateUniqueUserId(cleanName);
+    const salt = generateSalt();
+    const passwordHash = await hashPassword(password, salt);
 
-    if (existing.exists()) {
-      // Bestaande gebruiker, gebruik hun originele naam
-      const data = existing.data();
-      state.currentUser = { key, name: data.displayName };
-    } else {
-      // Nieuwe gebruiker
-      await setDoc(userRef, {
-        displayName: cleanName,
-        joinedAt: serverTimestamp(),
-      });
-      state.currentUser = { key, name: cleanName };
-    }
+    await setDoc(doc(db, "users", userId), {
+      displayName: cleanName,
+      displayNameLower: cleanName.toLowerCase(),
+      passwordHash,
+      salt,
+      joinedAt: serverTimestamp(),
+    });
 
-    // Bewaar lokaal
+    state.currentUser = { key: userId, name: cleanName };
     localStorage.setItem("wk2026-user", JSON.stringify(state.currentUser));
+
+    // Laat zien als het een dubbele naam was
+    if (userId !== slugify(cleanName)) {
+      showBanner(`Account aangemaakt! Er was al een "${cleanName}", jij bent uniek via je wachtwoord.`, "success", 5000);
+    }
 
     return true;
   } catch (err) {
-    console.error("Login mislukt:", err);
-    showBanner("Inloggen mislukt: " + err.message, "error", 0);
+    console.error("Registratie mislukt:", err);
+    showBanner("Registratie mislukt: " + err.message, "error", 0);
     return false;
   }
 }
@@ -186,6 +272,25 @@ function tryAutoLogin() {
     return JSON.parse(saved);
   } catch {
     return null;
+  }
+}
+
+// Bij auto-login checken we of de gebruiker nog bestaat (geen wachtwoord nodig)
+async function resumeSession(savedUser) {
+  if (!savedUser || !savedUser.key) return false;
+  try {
+    const userDoc = await getDoc(doc(db, "users", savedUser.key));
+    if (!userDoc.exists()) {
+      // Account is verwijderd of bestaat niet meer
+      localStorage.removeItem("wk2026-user");
+      return false;
+    }
+    const data = userDoc.data();
+    state.currentUser = { key: savedUser.key, name: data.displayName };
+    return true;
+  } catch (err) {
+    console.error("Sessie herstellen mislukt:", err);
+    return false;
   }
 }
 
@@ -921,17 +1026,43 @@ function init() {
     return;
   }
 
-  // Login form
-  document.getElementById("login-form").addEventListener("submit", async (e) => {
+  // Login/registratie form
+  const loginForm = document.getElementById("login-form");
+  loginForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     const name = document.getElementById("name-input").value;
-    const btn = e.target.querySelector("button");
+    const password = document.getElementById("password-input").value;
+    const mode = document.querySelector(".auth-tab.active").dataset.mode;
+    const btn = e.target.querySelector("button[type='submit']");
+    const originalText = btn.textContent;
     btn.disabled = true;
     btn.textContent = "Bezig...";
-    const ok = await login(name);
+
+    const ok = mode === "register"
+      ? await registerUser(name, password)
+      : await loginUser(name, password);
+
     btn.disabled = false;
-    btn.textContent = "Doe mee";
+    btn.textContent = originalText;
     if (ok) showMainApp();
+  });
+
+  // Tab toggle tussen Inloggen en Nieuw account
+  document.querySelectorAll(".auth-tab").forEach((tab) => {
+    tab.addEventListener("click", () => {
+      document.querySelectorAll(".auth-tab").forEach((t) => t.classList.remove("active"));
+      tab.classList.add("active");
+      const mode = tab.dataset.mode;
+      const submitBtn = document.querySelector("#login-form button[type='submit']");
+      const hint = document.getElementById("password-hint");
+      if (mode === "register") {
+        submitBtn.textContent = "Account aanmaken";
+        hint.textContent = "Kies een wachtwoord (minstens 4 tekens). Onthoud het goed!";
+      } else {
+        submitBtn.textContent = "Inloggen";
+        hint.textContent = "Vul je wachtwoord in om in te loggen.";
+      }
+    });
   });
 
   // Logout
@@ -967,10 +1098,10 @@ function init() {
     }
   });
 
-  // Auto login als opgeslagen
+  // Auto login als opgeslagen sessie geldig is
   const saved = tryAutoLogin();
   if (saved) {
-    login(saved.name).then((ok) => {
+    resumeSession(saved).then((ok) => {
       if (ok) showMainApp();
     });
   }

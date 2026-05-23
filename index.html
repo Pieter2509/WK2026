@@ -21,12 +21,19 @@
       
       <div class="login-card">
         <h2 id="pool-name-display">WK Poul</h2>
-        <p class="login-desc">Voer je naam in om mee te doen aan de poul</p>
+        
+        <div class="auth-tabs">
+          <button class="auth-tab active" data-mode="login" type="button">Inloggen</button>
+          <button class="auth-tab" data-mode="register" type="button">Nieuw account</button>
+        </div>
+
         <form id="login-form">
-          <input type="text" id="name-input" placeholder="Jouw naam" required maxlength="30" autocomplete="off">
-          <button type="submit" class="btn-primary">Doe mee</button>
+          <input type="text" id="name-input" placeholder="Jouw naam" required maxlength="30" autocomplete="username">
+          <input type="password" id="password-input" placeholder="Wachtwoord" required minlength="4" maxlength="50" autocomplete="current-password">
+          <button type="submit" class="btn-primary">Inloggen</button>
         </form>
-        <p class="login-hint">Tip: gebruik dezelfde naam als je opnieuw inlogt op een ander apparaat om je voorspellingen te zien.</p>
+        <p class="login-hint" id="password-hint">Vul je wachtwoord in om in te loggen.</p>
+        <p class="login-hint">Tip: de site onthoudt je automatisch. Op een nieuw apparaat moet je opnieuw inloggen met dezelfde naam en wachtwoord.</p>
       </div>
       
       <div class="rules-preview">

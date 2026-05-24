@@ -18,7 +18,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js";
 
 import { firebaseConfig, POOL_NAME, ADMIN_PASSWORD, PREDICTION_DEADLINE } from "./config.js";
-import { GROUPS, TEAMS, FLAGS, MATCHES, calculatePoints, SCORING, teamName, teamFlag } from "./data.js";
+import { GROUPS, TEAMS, FLAGS, MATCHES, calculatePoints, SCORING, teamName, teamFlag, teamAbbr } from "./data.js";
 import { KO_MATCHES, KO_ROUND_NAMES, resolveSlot, isRoundOpen } from "./knockout.js";
 import { syncResults } from "./autosync.js";
 
@@ -750,8 +750,9 @@ function renderMatchCard(match) {
       </div>
       <div class="match-teams">
         <div class="team team-home">
-          <span>${teamName(match.home)}</span>
           <span class="team-flag">${homeFlag}</span>
+          <span class="team-name">${teamName(match.home)}</span>
+          <span class="team-abbr">${teamAbbr(match.home)}</span>
         </div>
         <div class="score-input-group">
           <input type="number" min="0" max="20" class="score-input" data-side="home" data-match-id="${match.id}" 
@@ -761,8 +762,9 @@ function renderMatchCard(match) {
                  value="${pred.away != null ? pred.away : ''}" ${disabled}>
         </div>
         <div class="team team-away">
+          <span class="team-abbr">${teamAbbr(match.away)}</span>
+          <span class="team-name">${teamName(match.away)}</span>
           <span class="team-flag">${awayFlag}</span>
-          <span>${teamName(match.away)}</span>
         </div>
       </div>
       ${statusHtml}
@@ -1035,11 +1037,11 @@ function renderKoMatchCard(koMatch) {
   const awayResolved = resolveSlot(koMatch.away, state.results);
 
   const homeDisplay = homeResolved.team
-    ? `<span class="team-flag">${teamFlag(homeResolved.team)}</span> <span>${teamName(homeResolved.team)}</span>`
+    ? `<span class="team-flag">${teamFlag(homeResolved.team)}</span><span class="team-name">${teamName(homeResolved.team)}</span><span class="team-abbr">${teamAbbr(homeResolved.team)}</span>`
     : `<span class="team-placeholder">${formatPlaceholder(koMatch.home)}</span>`;
 
   const awayDisplay = awayResolved.team
-    ? `<span>${teamName(awayResolved.team)}</span> <span class="team-flag">${teamFlag(awayResolved.team)}</span>`
+    ? `<span class="team-abbr">${teamAbbr(awayResolved.team)}</span><span class="team-name">${teamName(awayResolved.team)}</span><span class="team-flag">${teamFlag(awayResolved.team)}</span>`
     : `<span class="team-placeholder">${formatPlaceholder(koMatch.away)}</span>`;
 
   // Je kunt alleen voorspellen als beide teams bekend zijn
@@ -1161,8 +1163,9 @@ function renderAdmin() {
                 </div>
                 <div class="match-teams">
                   <div class="team team-home">
-                    <span>${teamName(m.home)}</span>
                     <span class="team-flag">${teamFlag(m.home)}</span>
+                    <span class="team-name">${teamName(m.home)}</span>
+                    <span class="team-abbr">${teamAbbr(m.home)}</span>
                   </div>
                   <div class="score-input-group">
                     <input type="number" min="0" max="20" class="score-input admin-result-input" 
@@ -1172,8 +1175,9 @@ function renderAdmin() {
                            data-side="away" data-match-id="${m.id}" value="${a}">
                   </div>
                   <div class="team team-away">
+                    <span class="team-abbr">${teamAbbr(m.away)}</span>
+                    <span class="team-name">${teamName(m.away)}</span>
                     <span class="team-flag">${teamFlag(m.away)}</span>
-                    <span>${teamName(m.away)}</span>
                   </div>
                 </div>
                 <div class="match-status">
@@ -1216,8 +1220,9 @@ function renderAdmin() {
                 </div>
                 <div class="match-teams">
                   <div class="team team-home">
-                    <span>${homeText}</span>
                     ${homeResolved.team ? `<span class="team-flag">${teamFlag(homeResolved.team)}</span>` : ''}
+                    <span class="team-name">${homeText}</span>
+                    ${homeResolved.team ? `<span class="team-abbr">${teamAbbr(homeResolved.team)}</span>` : ''}
                   </div>
                   <div class="score-input-group">
                     <input type="number" min="0" max="20" class="score-input admin-result-input"
@@ -1227,8 +1232,9 @@ function renderAdmin() {
                            data-side="away" data-match-id="${m.id}" value="${a}">
                   </div>
                   <div class="team team-away">
+                    ${awayResolved.team ? `<span class="team-abbr">${teamAbbr(awayResolved.team)}</span>` : ''}
+                    <span class="team-name">${awayText}</span>
                     ${awayResolved.team ? `<span class="team-flag">${teamFlag(awayResolved.team)}</span>` : ''}
-                    <span>${awayText}</span>
                   </div>
                 </div>
                 <div class="match-status">

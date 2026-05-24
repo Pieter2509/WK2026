@@ -120,20 +120,48 @@ function setConnectionStatus(connected) {
 // AUTH (naam + wachtwoord login)
 // ================================================================
 
-// Hash een wachtwoord met salt via Web Crypto API (SHA-256)
+// Hash een wachtwoord met salt
+// Probeert eerst Web Crypto API (SHA-256), valt terug op simpele hash voor http contexts
 async function hashPassword(password, salt) {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(password + salt);
-  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-  return Array.from(new Uint8Array(hashBuffer))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
+  const input = password + salt;
+  
+  // Probeer Web Crypto API (werkt alleen op https of localhost)
+  if (typeof crypto !== "undefined" && crypto.subtle && crypto.subtle.digest) {
+    try {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(input);
+      const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+      return "sha256:" + Array.from(new Uint8Array(hashBuffer))
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join("");
+    } catch (err) {
+      console.warn("Web Crypto niet beschikbaar, val terug op simpele hash:", err);
+    }
+  }
+  
+  // Fallback: simpele hash (niet ideaal, maar werkt voor vriendenpoul)
+  // Gebaseerd op djb2 algoritme + extra mixing
+  let h1 = 5381, h2 = 52711;
+  for (let i = 0; i < input.length; i++) {
+    const c = input.charCodeAt(i);
+    h1 = ((h1 << 5) + h1 + c) >>> 0;
+    h2 = ((h2 << 5) + h2 - c) >>> 0;
+  }
+  return "fb:" + h1.toString(16).padStart(8, "0") + h2.toString(16).padStart(8, "0");
 }
 
 // Genereer random salt
 function generateSalt() {
-  const bytes = crypto.getRandomValues(new Uint8Array(16));
-  return Array.from(bytes).map((b) => b.toString(16).padStart(2, "0")).join("");
+  if (typeof crypto !== "undefined" && crypto.getRandomValues) {
+    const bytes = crypto.getRandomValues(new Uint8Array(16));
+    return Array.from(bytes).map((b) => b.toString(16).padStart(2, "0")).join("");
+  }
+  // Fallback: Math.random
+  let salt = "";
+  for (let i = 0; i < 32; i++) {
+    salt += Math.floor(Math.random() * 16).toString(16);
+  }
+  return salt;
 }
 
 // Zoek alle users met deze displayName (case insensitive)

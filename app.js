@@ -17,7 +17,7 @@ import {
   serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/10.14.0/firebase-firestore.js";
 
-import { firebaseConfig, POOL_NAME, ADMIN_PASSWORD, PREDICTION_DEADLINE } from "./config.js";
+import { firebaseConfig, POOL_NAME, ADMIN_PASSWORD, PREDICTION_DEADLINE, COUNTDOWN_DATE, COUNTDOWN_LABEL } from "./config.js";
 import { GROUPS, TEAMS, FLAGS, MATCHES, calculatePoints, SCORING, teamName, teamFlag } from "./data.js";
 import { KO_MATCHES, KO_ROUND_NAMES, resolveSlot, isRoundOpen } from "./knockout.js";
 import { syncResults } from "./autosync.js";
@@ -1341,10 +1341,70 @@ function showMainApp() {
   document.getElementById("current-user-name").textContent = state.currentUser.name;
   document.getElementById("pool-name-header").textContent = POOL_NAME;
 
+  // Start countdown als die geconfigureerd is
+  initCountdown();
+
   subscribeToResults();
   subscribeToAllPredictions();
 
   renderCurrentView();
+}
+
+// ================================================================
+// COUNTDOWN naar weekendje weg
+// ================================================================
+let countdownInterval = null;
+
+function initCountdown() {
+  const el = document.getElementById("countdown");
+  if (!el) return;
+
+  // Geen datum of label ingesteld? Verberg de countdown
+  if (!COUNTDOWN_DATE) {
+    el.style.display = "none";
+    return;
+  }
+
+  // Label updaten
+  const labelEl = el.querySelector(".countdown-label");
+  if (labelEl && COUNTDOWN_LABEL) labelEl.textContent = COUNTDOWN_LABEL;
+
+  // Update direct + elke minuut
+  updateCountdown();
+  if (countdownInterval) clearInterval(countdownInterval);
+  countdownInterval = setInterval(updateCountdown, 60 * 1000);
+}
+
+function updateCountdown() {
+  const el = document.getElementById("countdown");
+  if (!el || !COUNTDOWN_DATE) return;
+
+  const target = new Date(COUNTDOWN_DATE).getTime();
+  const now = Date.now();
+  const diff = target - now;
+
+  if (diff <= 0) {
+    // Datum is al verstreken
+    el.innerHTML = `<div class="countdown-label">Het weekendje is begonnen!</div>`;
+    if (countdownInterval) {
+      clearInterval(countdownInterval);
+      countdownInterval = null;
+    }
+    return;
+  }
+
+  const totalMinutes = Math.floor(diff / (1000 * 60));
+  const days = Math.floor(totalMinutes / (60 * 24));
+  const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
+  const mins = totalMinutes % 60;
+
+  const daysEl = document.getElementById("cd-days");
+  const hoursEl = document.getElementById("cd-hours");
+  const minsEl = document.getElementById("cd-mins");
+
+  if (daysEl) daysEl.textContent = days;
+  if (hoursEl) hoursEl.textContent = String(hours).padStart(2, "0");
+  if (minsEl) minsEl.textContent = String(mins).padStart(2, "0");
 }
 
 function init() {

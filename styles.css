@@ -994,6 +994,78 @@ body {
 .status-dot.offline { background: var(--accent); }
 
 /* ================================================================
+   KNOCKOUT VIEW
+   ================================================================ */
+
+.knockout-container {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.ko-section {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  border: 1px solid var(--line);
+}
+
+.ko-section.ko-locked {
+  opacity: 0.6;
+}
+
+.ko-section-header {
+  background: var(--ink);
+  color: var(--bg);
+  padding: 14px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ko-section-header h3 {
+  font-family: var(--display);
+  font-weight: 900;
+  font-size: 22px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.ko-status {
+  font-family: var(--display);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 3px;
+}
+
+.ko-status.open {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+.ko-status.closed {
+  background: rgba(241, 234, 216, 0.15);
+  color: rgba(241, 234, 216, 0.7);
+}
+
+.ko-locked-msg {
+  padding: 24px;
+  color: var(--ink-light);
+  font-style: italic;
+  text-align: center;
+  font-size: 14px;
+}
+
+.team-placeholder {
+  font-style: italic;
+  color: var(--ink-light);
+  font-size: 13px;
+}
+
+/* ================================================================
    RESPONSIVE
    ================================================================ */
 

@@ -70,6 +70,7 @@
       </div>
       <nav class="tabs">
         <button class="tab active" data-view="matches">Wedstrijden</button>
+        <button class="tab" data-view="knockout">Knockout</button>
         <button class="tab" data-view="leaderboard">Ranglijst</button>
         <button class="tab" data-view="standings">Groepen</button>
         <button class="tab" data-view="admin">Beheer</button>
@@ -107,6 +108,17 @@
           </div>
         </div>
         <div id="matches-container" class="matches-container"></div>
+      </section>
+
+      <!-- KNOCKOUT VIEW -->
+      <section id="view-knockout" class="view">
+        <div class="view-header">
+          <div>
+            <h2 class="view-title">Knockout</h2>
+            <p class="view-sub" id="knockout-summary">Voorspel de knockout wedstrijden</p>
+          </div>
+        </div>
+        <div id="knockout-container" class="knockout-container"></div>
       </section>
 
       <!-- LEADERBOARD VIEW -->

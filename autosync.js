@@ -8,6 +8,7 @@
 // ================================================================
 
 import { MATCHES, TEAMS } from "./data.js";
+import { KO_MATCHES, resolveSlot } from "./knockout.js";
 
 const OPENFOOTBALL_URL = "https://raw.githubusercontent.com/openfootball/worldcup.json/master/2026/worldcup.json";
 
@@ -54,8 +55,9 @@ export async function fetchOfficialResults() {
 }
 
 // Match een openfootball wedstrijd aan onze interne wedstrijd-ID
+// Probeert eerst groepsfase, dan knockout (waar teams via bracket resolven)
 // Returns { matchId, home, away } of null als geen match
-export function matchOpenfootballToInternal(ofMatch) {
+export function matchOpenfootballToInternal(ofMatch, allResults = {}) {
   if (!ofMatch.score || !ofMatch.score.ft) return null;
 
   const team1 = normalizeTeam(ofMatch.team1);
@@ -65,25 +67,45 @@ export function matchOpenfootballToInternal(ofMatch) {
   const [ft1, ft2] = ofMatch.score.ft;
   if (ft1 == null || ft2 == null) return null;
 
-  // Zoek onze wedstrijd waar deze twee teams tegen elkaar spelen
-  const internalMatch = MATCHES.find((m) =>
+  // 1. Probeer groepsfase
+  const groupMatch = MATCHES.find((m) =>
     (m.home === team1 && m.away === team2) ||
     (m.home === team2 && m.away === team1)
   );
 
-  if (!internalMatch) return null;
-
-  // Bepaal welk team home/away is in onze data
-  let home, away;
-  if (internalMatch.home === team1) {
-    home = ft1;
-    away = ft2;
-  } else {
-    home = ft2;
-    away = ft1;
+  if (groupMatch) {
+    let home, away;
+    if (groupMatch.home === team1) {
+      home = ft1;
+      away = ft2;
+    } else {
+      home = ft2;
+      away = ft1;
+    }
+    return { matchId: groupMatch.id, home, away };
   }
 
-  return { matchId: internalMatch.id, home, away };
+  // 2. Probeer knockout: resolve placeholders en zoek match
+  for (const ko of KO_MATCHES) {
+    const homeR = resolveSlot(ko.home, allResults);
+    const awayR = resolveSlot(ko.away, allResults);
+    if (!homeR.team || !awayR.team) continue;
+
+    if ((homeR.team === team1 && awayR.team === team2) ||
+        (homeR.team === team2 && awayR.team === team1)) {
+      let home, away;
+      if (homeR.team === team1) {
+        home = ft1;
+        away = ft2;
+      } else {
+        home = ft2;
+        away = ft1;
+      }
+      return { matchId: ko.id, home, away };
+    }
+  }
+
+  return null;
 }
 
 // Hoofdfunctie: synchroniseer uitslagen
@@ -109,7 +131,7 @@ export async function syncResults(existingResults, onUpdate) {
   for (const ofMatch of data.matches) {
     if (!ofMatch.score || !ofMatch.score.ft) continue;
 
-    const mapped = matchOpenfootballToInternal(ofMatch);
+    const mapped = matchOpenfootballToInternal(ofMatch, existingResults);
     if (!mapped) {
       stats.unmatched++;
       stats.unmatchedMatches.push(`${ofMatch.team1} vs ${ofMatch.team2}`);

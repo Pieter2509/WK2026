@@ -19,6 +19,7 @@ import {
 
 import { firebaseConfig, POOL_NAME, ADMIN_PASSWORD, PREDICTION_DEADLINE } from "./config.js";
 import { GROUPS, TEAMS, FLAGS, MATCHES, calculatePoints, SCORING, teamName, teamFlag } from "./data.js";
+import { KO_MATCHES, KO_ROUND_NAMES, resolveSlot, isRoundOpen } from "./knockout.js";
 import { syncResults } from "./autosync.js";
 
 // ================================================================
@@ -538,7 +539,10 @@ function calculateUserPoints(userKey) {
   let correctCount = 0;
   let finishedCount = 0;
 
-  for (const match of MATCHES) {
+  // Combineer groepsfase + knockout wedstrijden
+  const allMatches = [...MATCHES, ...KO_MATCHES];
+
+  for (const match of allMatches) {
     const result = state.results[match.id];
     if (!result || result.home == null || result.away == null) continue;
     finishedCount++;
@@ -859,7 +863,139 @@ function renderStandings() {
 // RENDER: ADMIN
 // ================================================================
 
-function renderAdmin() {
+// ================================================================
+// RENDER: KNOCKOUT
+// ================================================================
+
+function renderKnockoutView() {
+  const container = document.getElementById("knockout-container");
+  const summaryEl = document.getElementById("knockout-summary");
+
+  // Tel hoeveel knockout wedstrijden je hebt voorspeld
+  const koMatchIds = KO_MATCHES.map(m => m.id);
+  const koPredCount = koMatchIds.filter(id => state.predictions[id] != null).length;
+  summaryEl.textContent = `Je hebt ${koPredCount} van de ${KO_MATCHES.length} knockout wedstrijden voorspeld`;
+
+  // Render per ronde
+  const rounds = ['R32', 'R16', 'QF', 'SF', 'TF', 'F'];
+  let html = "";
+
+  for (const round of rounds) {
+    const open = isRoundOpen(round, state.results);
+    const roundMatches = KO_MATCHES.filter(m => m.round === round);
+    const roundName = KO_ROUND_NAMES[round];
+
+    html += `
+      <div class="ko-section ${open ? '' : 'ko-locked'}">
+        <div class="ko-section-header">
+          <h3>${roundName}</h3>
+          ${open ? '<span class="ko-status open">Open</span>' : '<span class="ko-status closed">Nog niet beschikbaar</span>'}
+        </div>
+    `;
+
+    if (!open) {
+      html += `<p class="ko-locked-msg">Deze ronde komt beschikbaar zodra de voorgaande ronde compleet is.</p>`;
+    } else {
+      html += `<div class="match-list">`;
+      for (const koMatch of roundMatches) {
+        html += renderKoMatchCard(koMatch);
+      }
+      html += `</div>`;
+    }
+
+    html += `</div>`;
+  }
+
+  container.innerHTML = html;
+
+  // Wire up score inputs
+  container.querySelectorAll(".score-input").forEach((input) => {
+    input.addEventListener("input", handleScoreInput);
+    input.addEventListener("blur", handleScoreBlur);
+  });
+}
+
+function renderKoMatchCard(koMatch) {
+  const pred = state.predictions[koMatch.id] || {};
+  const result = state.results[koMatch.id];
+  const hasResult = result && result.home != null && result.away != null;
+  const locked = isMatchLocked(koMatch);
+
+  const homeResolved = resolveSlot(koMatch.home, state.results);
+  const awayResolved = resolveSlot(koMatch.away, state.results);
+
+  const homeDisplay = homeResolved.team
+    ? `<span class="team-flag">${teamFlag(homeResolved.team)}</span> <span>${teamName(homeResolved.team)}</span>`
+    : `<span class="team-placeholder">${formatPlaceholder(koMatch.home)}</span>`;
+
+  const awayDisplay = awayResolved.team
+    ? `<span>${teamName(awayResolved.team)}</span> <span class="team-flag">${teamFlag(awayResolved.team)}</span>`
+    : `<span class="team-placeholder">${formatPlaceholder(koMatch.away)}</span>`;
+
+  // Je kunt alleen voorspellen als beide teams bekend zijn
+  const canPredict = homeResolved.team && awayResolved.team && !hasResult && !locked;
+  const disabled = !canPredict ? "disabled" : "";
+
+  let statusHtml = "";
+  if (hasResult) {
+    const points = calculatePoints(pred, result);
+    statusHtml = `
+      <div class="match-status">
+        <span class="status-tag finished">Officieel</span>
+        <span class="actual-result">${result.home} - ${result.away}</span>
+        ${pred.home != null ? `<span class="points-earned ${points === 0 ? 'zero' : ''}">${points} ptn</span>` : ''}
+      </div>
+    `;
+  } else if (!homeResolved.team || !awayResolved.team) {
+    statusHtml = `<div class="match-status"><span class="status-tag locked">Teams nog onbekend</span></div>`;
+  } else if (locked) {
+    statusHtml = `<div class="match-status"><span class="status-tag locked">Gesloten</span></div>`;
+  } else if (pred.home != null) {
+    statusHtml = `<div class="match-status"><span class="status-tag saved">Opgeslagen</span></div>`;
+  } else {
+    statusHtml = `<div class="match-status"><span class="status-tag unsaved">Te voorspellen</span></div>`;
+  }
+
+  const cardClass = hasResult ? "finished" : (locked || !canPredict ? "locked" : "");
+
+  return `
+    <div class="match-card ${cardClass}" data-match-id="${koMatch.id}">
+      <div class="match-meta">
+        <span class="match-date">${formatDate(koMatch.date)}</span>
+        <span class="match-time">${formatTime(koMatch.date)}</span>
+        <span class="match-venue">${koMatch.venue}</span>
+      </div>
+      <div class="match-teams">
+        <div class="team team-home">${homeDisplay}</div>
+        <div class="score-input-group">
+          <input type="number" min="0" max="20" class="score-input" data-side="home" data-match-id="${koMatch.id}"
+                 value="${pred.home != null ? pred.home : ''}" ${disabled}>
+          <span class="score-separator">:</span>
+          <input type="number" min="0" max="20" class="score-input" data-side="away" data-match-id="${koMatch.id}"
+                 value="${pred.away != null ? pred.away : ''}" ${disabled}>
+        </div>
+        <div class="team team-away">${awayDisplay}</div>
+      </div>
+      ${statusHtml}
+    </div>
+  `;
+}
+
+// Format placeholder voor weergave: "1A" -> "Winnaar A", "3ABCDF" -> "3e uit A/B/C/D/F", "W:R32-1" -> "Winnaar R32-1"
+function formatPlaceholder(placeholder) {
+  if (!placeholder) return '';
+  if (placeholder.startsWith('W:')) return `Winnaar ${placeholder.substring(2)}`;
+  if (placeholder.startsWith('L:')) return `Verliezer ${placeholder.substring(2)}`;
+  if (/^1[A-L]$/.test(placeholder)) return `Winnaar ${placeholder[1]}`;
+  if (/^2[A-L]$/.test(placeholder)) return `Nr 2 ${placeholder[1]}`;
+  if (placeholder.startsWith('3')) {
+    const groups = placeholder.substring(1).split('').join('/');
+    return `3e uit ${groups}`;
+  }
+  return placeholder;
+}
+
+
   const adminUnlock = document.getElementById("admin-unlock");
   const adminPanel = document.getElementById("admin-panel");
 
@@ -942,8 +1078,64 @@ function renderAdmin() {
     `;
   }
 
+  // Knockout sectie in admin
+  const koRounds = ['R32', 'R16', 'QF', 'SF', 'TF', 'F'];
+  for (const round of koRounds) {
+    const roundMatches = KO_MATCHES.filter(m => m.round === round)
+      .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    html += `
+      <div class="group-section" style="margin-bottom: 24px;">
+        <div class="group-header">
+          <h3>${KO_ROUND_NAMES[round]}</h3>
+        </div>
+        <div class="match-list">
+          ${roundMatches.map((m) => {
+            const result = state.results[m.id] || {};
+            const h = result.home != null ? result.home : "";
+            const a = result.away != null ? result.away : "";
+            const homeResolved = resolveSlot(m.home, state.results);
+            const awayResolved = resolveSlot(m.away, state.results);
+            const homeText = homeResolved.team ? teamName(homeResolved.team) : formatPlaceholder(m.home);
+            const awayText = awayResolved.team ? teamName(awayResolved.team) : formatPlaceholder(m.away);
+            return `
+              <div class="match-card" data-match-id="${m.id}">
+                <div class="match-meta">
+                  <span class="match-date">${formatDate(m.date)}</span>
+                </div>
+                <div class="match-teams">
+                  <div class="team team-home">
+                    <span>${homeText}</span>
+                    ${homeResolved.team ? `<span class="team-flag">${teamFlag(homeResolved.team)}</span>` : ''}
+                  </div>
+                  <div class="score-input-group">
+                    <input type="number" min="0" max="20" class="score-input admin-result-input"
+                           data-side="home" data-match-id="${m.id}" value="${h}">
+                    <span class="score-separator">:</span>
+                    <input type="number" min="0" max="20" class="score-input admin-result-input"
+                           data-side="away" data-match-id="${m.id}" value="${a}">
+                  </div>
+                  <div class="team team-away">
+                    ${awayResolved.team ? `<span class="team-flag">${teamFlag(awayResolved.team)}</span>` : ''}
+                    <span>${awayText}</span>
+                  </div>
+                </div>
+                <div class="match-status">
+                  <span class="status-tag ${result.home != null ? 'saved' : 'unsaved'}">
+                    ${result.home != null ? 'Vastgelegd' : 'Geen uitslag'}
+                  </span>
+                </div>
+              </div>
+            `;
+          }).join("")}
+        </div>
+      </div>
+    `;
+  }
+
   container.innerHTML = html;
 
+  // Event listeners voor uitslag invoer
   container.querySelectorAll(".admin-result-input").forEach((input) => {
     input.addEventListener("blur", handleAdminResultBlur);
   });
@@ -1016,6 +1208,7 @@ function switchView(view) {
 function renderCurrentView() {
   if (!state.currentUser) return;
   if (currentView === "matches") renderMatchesView();
+  else if (currentView === "knockout") renderKnockoutView();
   else if (currentView === "leaderboard") renderLeaderboard();
   else if (currentView === "standings") renderStandings();
   else if (currentView === "admin") renderAdmin();

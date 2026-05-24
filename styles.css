@@ -486,6 +486,13 @@ body {
 .filter-group {
   display: flex;
   align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.filter-item {
+  display: flex;
+  align-items: center;
   gap: 10px;
 }
 
@@ -496,6 +503,7 @@ body {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--ink-soft);
+  white-space: nowrap;
 }
 
 .filter-group select {

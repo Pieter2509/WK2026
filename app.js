@@ -566,31 +566,133 @@ function calculateUserPoints(userKey) {
 function renderMatchesView() {
   const container = document.getElementById("matches-container");
   const filter = document.getElementById("group-filter").value;
+  const sortMode = document.getElementById("sort-mode")?.value || "group";
 
   // Aantal voorspellingen tellen
   const totalMatches = MATCHES.length;
-  const myPredCount = Object.keys(state.predictions).length;
+  const myPredCount = Object.keys(state.predictions).filter(id =>
+    MATCHES.some(m => m.id === id)
+  ).length;
   document.getElementById("predictions-summary").textContent =
     `Je hebt ${myPredCount} van de ${totalMatches} groepswedstrijden voorspeld`;
 
+  // Filter eerst
+  let matches = filter === "all"
+    ? [...MATCHES]
+    : MATCHES.filter(m => m.group === filter);
+
   let html = "";
-  for (const [groupId, groupData] of Object.entries(GROUPS)) {
-    if (filter !== "all" && filter !== groupId) continue;
 
-    const groupMatches = MATCHES.filter((m) => m.group === groupId)
-      .sort((a, b) => new Date(a.date) - new Date(b.date));
+  if (sortMode === "group") {
+    // Per groep gegroepeerd (originele weergave)
+    for (const [groupId, groupData] of Object.entries(GROUPS)) {
+      if (filter !== "all" && filter !== groupId) continue;
 
-    html += `
-      <div class="group-section">
-        <div class="group-header">
-          <h3>${groupData.name}</h3>
-          <span class="group-teams">${groupData.teams.map(t => teamFlag(t)).join(' ')}</span>
+      const groupMatches = MATCHES.filter((m) => m.group === groupId)
+        .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+      html += `
+        <div class="group-section">
+          <div class="group-header">
+            <h3>${groupData.name}</h3>
+            <span class="group-teams">${groupData.teams.map(t => teamFlag(t)).join(' ')}</span>
+          </div>
+          <div class="match-list">
+            ${groupMatches.map(m => renderMatchCard(m)).join("")}
+          </div>
         </div>
-        <div class="match-list">
-          ${groupMatches.map(m => renderMatchCard(m)).join("")}
+      `;
+    }
+  } else if (sortMode === "date") {
+    // Chronologisch, gegroepeerd per dag
+    const sorted = matches.sort((a, b) => new Date(a.date) - new Date(b.date));
+    const byDay = {};
+    for (const m of sorted) {
+      const dayKey = m.date.substring(0, 10); // YYYY-MM-DD
+      if (!byDay[dayKey]) byDay[dayKey] = [];
+      byDay[dayKey].push(m);
+    }
+
+    for (const [dayKey, dayMatches] of Object.entries(byDay)) {
+      const firstMatch = dayMatches[0];
+      const dayLabel = formatDateLong(firstMatch.date);
+      html += `
+        <div class="group-section">
+          <div class="group-header">
+            <h3>${dayLabel}</h3>
+            <span class="group-teams">${dayMatches.length} ${dayMatches.length === 1 ? 'wedstrijd' : 'wedstrijden'}</span>
+          </div>
+          <div class="match-list">
+            ${dayMatches.map(m => renderMatchCard(m)).join("")}
+          </div>
         </div>
-      </div>
-    `;
+      `;
+    }
+  } else if (sortMode === "todo") {
+    // Eerst nog te voorspellen (op datum), dan rest
+    const sorted = matches.sort((a, b) => new Date(a.date) - new Date(b.date));
+    const todo = [];
+    const done = [];
+    const finished = [];
+
+    for (const m of sorted) {
+      const result = state.results[m.id];
+      const hasResult = result && result.home != null && result.away != null;
+      const pred = state.predictions[m.id];
+      const hasPred = pred && pred.home != null;
+      const locked = isMatchLocked(m);
+
+      if (hasResult) {
+        finished.push(m);
+      } else if (hasPred || locked) {
+        done.push(m);
+      } else {
+        todo.push(m);
+      }
+    }
+
+    if (todo.length > 0) {
+      html += `
+        <div class="group-section">
+          <div class="group-header">
+            <h3>Nog te voorspellen</h3>
+            <span class="group-teams">${todo.length} ${todo.length === 1 ? 'wedstrijd' : 'wedstrijden'}</span>
+          </div>
+          <div class="match-list">
+            ${todo.map(m => renderMatchCard(m)).join("")}
+          </div>
+        </div>
+      `;
+    }
+    if (done.length > 0) {
+      html += `
+        <div class="group-section">
+          <div class="group-header">
+            <h3>Voorspeld of gesloten</h3>
+            <span class="group-teams">${done.length} ${done.length === 1 ? 'wedstrijd' : 'wedstrijden'}</span>
+          </div>
+          <div class="match-list">
+            ${done.map(m => renderMatchCard(m)).join("")}
+          </div>
+        </div>
+      `;
+    }
+    if (finished.length > 0) {
+      html += `
+        <div class="group-section">
+          <div class="group-header">
+            <h3>Afgelopen</h3>
+            <span class="group-teams">${finished.length} ${finished.length === 1 ? 'wedstrijd' : 'wedstrijden'}</span>
+          </div>
+          <div class="match-list">
+            ${finished.map(m => renderMatchCard(m)).join("")}
+          </div>
+        </div>
+      `;
+    }
+    if (todo.length === 0 && done.length === 0 && finished.length === 0) {
+      html = `<div class="leaderboard-empty">Geen wedstrijden om weer te geven.</div>`;
+    }
   }
 
   container.innerHTML = html;
@@ -600,6 +702,14 @@ function renderMatchesView() {
     input.addEventListener("input", handleScoreInput);
     input.addEventListener("blur", handleScoreBlur);
   });
+}
+
+// Lange datumweergave voor dag-headers
+function formatDateLong(isoString) {
+  const d = new Date(isoString);
+  const dagen = ["zondag", "maandag", "dinsdag", "woensdag", "donderdag", "vrijdag", "zaterdag"];
+  const maanden = ["januari", "februari", "maart", "april", "mei", "juni", "juli", "augustus", "september", "oktober", "november", "december"];
+  return `${dagen[d.getDay()]} ${d.getDate()} ${maanden[d.getMonth()]}`;
 }
 
 function renderMatchCard(match) {
@@ -1304,6 +1414,14 @@ function init() {
   document.getElementById("group-filter").addEventListener("change", () => {
     if (currentView === "matches") renderMatchesView();
   });
+
+  // Sort mode
+  const sortModeEl = document.getElementById("sort-mode");
+  if (sortModeEl) {
+    sortModeEl.addEventListener("change", () => {
+      if (currentView === "matches") renderMatchesView();
+    });
+  }
 
   // Admin login
   document.getElementById("admin-form").addEventListener("submit", (e) => {

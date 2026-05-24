@@ -89,22 +89,32 @@
             <p class="view-sub" id="predictions-summary">Vul je voorspellingen in voor elke wedstrijd</p>
           </div>
           <div class="filter-group">
-            <label for="group-filter">Filter</label>
-            <select id="group-filter">
-              <option value="all">Alle groepen</option>
-              <option value="A">Groep A</option>
-              <option value="B">Groep B</option>
-              <option value="C">Groep C</option>
-              <option value="D">Groep D</option>
-              <option value="E">Groep E</option>
-              <option value="F">Groep F (Nederland)</option>
-              <option value="G">Groep G</option>
-              <option value="H">Groep H</option>
-              <option value="I">Groep I</option>
-              <option value="J">Groep J</option>
-              <option value="K">Groep K</option>
-              <option value="L">Groep L</option>
-            </select>
+            <div class="filter-item">
+              <label for="sort-mode">Sorteren</label>
+              <select id="sort-mode">
+                <option value="group">Per groep</option>
+                <option value="date">Op datum (chronologisch)</option>
+                <option value="todo">Eerst nog te voorspellen</option>
+              </select>
+            </div>
+            <div class="filter-item">
+              <label for="group-filter">Filter</label>
+              <select id="group-filter">
+                <option value="all">Alle groepen</option>
+                <option value="A">Groep A</option>
+                <option value="B">Groep B</option>
+                <option value="C">Groep C</option>
+                <option value="D">Groep D</option>
+                <option value="E">Groep E</option>
+                <option value="F">Groep F (Nederland)</option>
+                <option value="G">Groep G</option>
+                <option value="H">Groep H</option>
+                <option value="I">Groep I</option>
+                <option value="J">Groep J</option>
+                <option value="K">Groep K</option>
+                <option value="L">Groep L</option>
+              </select>
+            </div>
           </div>
         </div>
         <div id="matches-container" class="matches-container"></div>

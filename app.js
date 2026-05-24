@@ -996,6 +996,7 @@ function formatPlaceholder(placeholder) {
 }
 
 
+function renderAdmin() {
   const adminUnlock = document.getElementById("admin-unlock");
   const adminPanel = document.getElementById("admin-panel");
 

@@ -1435,15 +1435,15 @@ function init() {
     const pw = document.getElementById("admin-password").value;
     if (pw === ADMIN_PASSWORD) {
       state.isAdmin = true;
-      // Herstel auto-sync als die eerder aanstond
-      const wasEnabled = localStorage.getItem("wk2026-autosync") === "true";
-      if (wasEnabled && !state.autoSyncInterval) {
+      // Auto-sync ALTIJD aanzetten bij admin login (geen uitzonderingen)
+      if (!state.autoSyncInterval) {
         runAutoSync(true);
         state.autoSyncInterval = setInterval(() => runAutoSync(true), 5 * 60 * 1000);
         state.autoSyncEnabled = true;
+        localStorage.setItem("wk2026-autosync", "true");
       }
       renderAdmin();
-      showBanner("Beheer geopend" + (wasEnabled ? ", auto-sync hervat" : ""), "success");
+      showBanner("Beheer geopend, auto-sync gestart", "success");
     } else {
       showBanner("Onjuist wachtwoord", "error");
     }

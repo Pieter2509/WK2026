@@ -149,8 +149,8 @@ export const MATCHES = [
   { id: 'D3', group: 'D', home: 'United States', away: 'Australia', date: '2026-06-20T21:00', venue: 'Lumen Field, Seattle' },
   { id: 'D4', group: 'D', home: 'Paraguay', away: 'Türkiye', date: '2026-06-21T00:00', venue: 'San Francisco' },
 
-  { id: 'E3', group: 'E', home: 'Germany', away: 'Ivory Coast', date: '2026-06-20T22:00', venue: 'Toronto' },
-  { id: 'E4', group: 'E', home: 'Ecuador', away: 'Curaçao', date: '2026-06-21T02:00', venue: 'Kansas City' },
+  { id: 'E3', group: 'E', home: 'Ecuador', away: 'Germany', date: '2026-06-20T22:00', venue: 'Toronto' },
+  { id: 'E4', group: 'E', home: 'Curaçao', away: 'Ivory Coast', date: '2026-06-21T02:00', venue: 'Kansas City' },
 
   { id: 'F3', group: 'F', home: 'Netherlands', away: 'Sweden', date: '2026-06-20T19:00', venue: 'NRG Stadium, Houston' },
   { id: 'F4', group: 'F', home: 'Tunisia', away: 'Japan', date: '2026-06-21T06:00', venue: 'Monterrey' },
@@ -158,8 +158,8 @@ export const MATCHES = [
   { id: 'G3', group: 'G', home: 'Belgium', away: 'Iran', date: '2026-06-21T21:00', venue: 'SoFi Stadium, Los Angeles' },
   { id: 'G4', group: 'G', home: 'New Zealand', away: 'Egypt', date: '2026-06-22T03:00', venue: 'Vancouver' },
 
-  { id: 'H3', group: 'H', home: 'Spain', away: 'Saudi Arabia', date: '2026-06-21T18:00', venue: 'Atlanta' },
-  { id: 'H4', group: 'H', home: 'Uruguay', away: 'Cape Verde', date: '2026-06-22T00:00', venue: 'Miami' },
+  { id: 'H3', group: 'H', home: 'Spain', away: 'Uruguay', date: '2026-06-21T18:00', venue: 'Atlanta' },
+  { id: 'H4', group: 'H', home: 'Cape Verde', away: 'Saudi Arabia', date: '2026-06-22T00:00', venue: 'Miami' },
 
   { id: 'I3', group: 'I', home: 'France', away: 'Iraq', date: '2026-06-22T23:00', venue: 'Philadelphia' },
   { id: 'I4', group: 'I', home: 'Norway', away: 'Senegal', date: '2026-06-23T02:00', venue: 'MetLife, New Jersey' },
@@ -186,8 +186,8 @@ export const MATCHES = [
   { id: 'D5', group: 'D', home: 'Türkiye', away: 'United States', date: '2026-06-25T21:00', venue: 'SoFi, Los Angeles' },
   { id: 'D6', group: 'D', home: 'Australia', away: 'Paraguay', date: '2026-06-25T21:00', venue: 'San Francisco' },
 
-  { id: 'E5', group: 'E', home: 'Curaçao', away: 'Germany', date: '2026-06-26T21:00', venue: 'Toronto' },
-  { id: 'E6', group: 'E', home: 'Ecuador', away: 'Ivory Coast', date: '2026-06-26T21:00', venue: 'Philadelphia' },
+  { id: 'E5', group: 'E', home: 'Curaçao', away: 'Ecuador', date: '2026-06-26T21:00', venue: 'Toronto' },
+  { id: 'E6', group: 'E', home: 'Germany', away: 'Ivory Coast', date: '2026-06-26T21:00', venue: 'Philadelphia' },
 
   { id: 'F5', group: 'F', home: 'Tunisia', away: 'Netherlands', date: '2026-06-26T01:00', venue: 'Arrowhead Stadium, Kansas City' },
   { id: 'F6', group: 'F', home: 'Japan', away: 'Sweden', date: '2026-06-26T01:00', venue: 'AT&T Stadium, Dallas' },
@@ -195,8 +195,8 @@ export const MATCHES = [
   { id: 'G5', group: 'G', home: 'Egypt', away: 'Iran', date: '2026-06-26T21:00', venue: 'Seattle' },
   { id: 'G6', group: 'G', home: 'New Zealand', away: 'Belgium', date: '2026-06-26T21:00', venue: 'Vancouver' },
 
-  { id: 'H5', group: 'H', home: 'Cape Verde', away: 'Spain', date: '2026-06-27T21:00', venue: 'Atlanta' },
-  { id: 'H6', group: 'H', home: 'Saudi Arabia', away: 'Uruguay', date: '2026-06-27T21:00', venue: 'Miami' },
+  { id: 'H5', group: 'H', home: 'Cape Verde', away: 'Uruguay', date: '2026-06-27T21:00', venue: 'Atlanta' },
+  { id: 'H6', group: 'H', home: 'Spain', away: 'Saudi Arabia', date: '2026-06-27T21:00', venue: 'Miami' },
 
   { id: 'I5', group: 'I', home: 'Iraq', away: 'Senegal', date: '2026-06-27T21:00', venue: 'Philadelphia' },
   { id: 'I6', group: 'I', home: 'Norway', away: 'France', date: '2026-06-27T21:00', venue: 'MetLife, New Jersey' },

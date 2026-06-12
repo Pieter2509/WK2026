@@ -465,13 +465,13 @@ async function runAutoSync(silent = false) {
 
     if (!silent) {
       if (synced > 0) {
-        const sourceLabel = result.source === "api-football" ? "API-Football" : "openfootball";
+        const sourceLabel = result.source === "football-data" ? "Football-Data.org" : "openfootball";
         showBanner(`${synced} nieuwe uitslag${synced > 1 ? 'en' : ''} gesynchroniseerd (via ${sourceLabel})`, "success");
       } else if (result.errors.length > 0) {
         showBanner(`Sync klaar met ${result.errors.length} fout(en). Check console.`, "warning");
         console.warn("Sync errors:", result.errors);
       } else {
-        const sourceLabel = result.source === "api-football" ? "API-Football" : 
+        const sourceLabel = result.source === "football-data" ? "Football-Data.org" : 
                             result.source === "openfootball" ? "openfootball" : "geen bron";
         showBanner(`Alles is up-to-date (${sourceLabel})`, "success", 2000);
       }
@@ -520,7 +520,7 @@ function updateSyncStatus(message) {
     const timeStr = `${String(time.getHours()).padStart(2,'0')}:${String(time.getMinutes()).padStart(2,'0')}`;
     const s = state.lastSyncStats;
     if (s) {
-      const sourceLabel = s.source === "api-football" ? "API-Football" : 
+      const sourceLabel = s.source === "football-data" ? "Football-Data.org" : 
                           s.source === "openfootball" ? "openfootball" : "geen bron";
       const errorCount = s.errors ? s.errors.length : 0;
       const errorText = errorCount > 0 ? `, ${errorCount} fout(en)` : "";
@@ -1141,7 +1141,7 @@ function renderAdmin() {
       <div class="sync-header">
         <div>
           <h3>Automatische uitslagen</h3>
-          <p class="sync-desc">Live uitslagen via API-Football (primair) en openfootball (backup). Sync elke 30 minuten.</p>
+          <p class="sync-desc">Live uitslagen via Football-Data.org (primair) en openfootball (backup). Sync elke 30 minuten.</p>
         </div>
       </div>
       <div class="sync-actions">

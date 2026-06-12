@@ -1,32 +1,25 @@
 // ================================================================
-// Live score sync: API-Football als primair, openfootball als fallback
-// 
-// API-Football (https://www.api-football.com)
-// - Gratis tier: 100 calls per dag
-// - Realtime scores (binnen 1 minuut)
-// - Vereist API key in config.js (API_FOOTBALL_KEY)
+// Live score sync: football-data.org als primair, openfootball als fallback
+//
+// Football-Data.org (https://www.football-data.org)
+// - Gratis tier: 10 calls per minuut, inclusief WK 2026 (competition WC)
+// - Updates binnen enkele minuten na een wedstrijd
+// - Vereist API token in config.js (FOOTBALL_DATA_TOKEN)
 //
 // Openfootball (https://github.com/openfootball/worldcup.json)
 // - Gratis, geen key
 // - Vertraging 1-24 uur (handmatige updates)
-// - Backup voor als API-Football faalt
+// - Backup voor als football-data.org faalt
 // ================================================================
 
 import { MATCHES, TEAMS } from "./data.js";
 import { KO_MATCHES, resolveSlot } from "./knockout.js";
-import { API_FOOTBALL_KEY } from "./config.js";
+import { FOOTBALL_DATA_TOKEN } from "./config.js";
 
-// API-Football endpoints
-const API_FOOTBALL_URL = "https://v3.football.api-sports.io/fixtures";
-const WORLD_CUP_LEAGUE_ID = 1;
-const WORLD_CUP_SEASON = 2026;
-
-// Openfootball backup
+const FOOTBALL_DATA_URL = "https://api.football-data.org/v4/competitions/WC/matches";
 const OPENFOOTBALL_URL = "https://raw.githubusercontent.com/openfootball/worldcup.json/master/2026/worldcup.json";
 
-// Aliases: variaties die externe bronnen mogelijk gebruiken -> onze canonieke naam
 const ALIASES = {
-  // openfootball variaties
   "Korea Republic":              "South Korea",
   "Korea, South":                "South Korea",
   "Czech Republic":              "Czechia",
@@ -42,9 +35,6 @@ const ALIASES = {
   "Bosnia-Herzegovina":          "Bosnia and Herzegovina",
   "Bosnia & Herzegovina":        "Bosnia and Herzegovina",
   "Curacao":                     "Curaçao",
-  // API-Football kan deze gebruiken
-  "South Korea":                 "South Korea",
-  "Czechia":                     "Czechia",
 };
 
 function normalizeTeam(name) {
@@ -56,69 +46,61 @@ function normalizeTeam(name) {
 }
 
 // ================================================================
-// API-FOOTBALL fetcher (primair)
+// FOOTBALL-DATA.ORG fetcher (primair)
 // ================================================================
 
-async function fetchApiFootballResults() {
-  if (!API_FOOTBALL_KEY || API_FOOTBALL_KEY === "VUL-HIER-IN") {
-    throw new Error("Geen API-Football key geconfigureerd");
+async function fetchFootballDataResults() {
+  if (!FOOTBALL_DATA_TOKEN || FOOTBALL_DATA_TOKEN === "VUL-HIER-IN") {
+    throw new Error("Geen Football-Data.org token geconfigureerd");
   }
 
-  // Haal ALLE fixtures van WK 2026 (filteren op status doen we lokaal via goals.home != null)
-  // Dit voorkomt issues als de API een wedstrijd nog niet heeft gemarkeerd als FT
-  const url = `${API_FOOTBALL_URL}?league=${WORLD_CUP_LEAGUE_ID}&season=${WORLD_CUP_SEASON}`;
-  
-  const response = await fetch(url, {
+  const response = await fetch(FOOTBALL_DATA_URL, {
     headers: {
-      "x-apisports-key": API_FOOTBALL_KEY,
+      "X-Auth-Token": FOOTBALL_DATA_TOKEN,
     },
     cache: "no-store",
   });
 
   if (!response.ok) {
-    throw new Error(`API-Football error: HTTP ${response.status}`);
+    if (response.status === 429) {
+      throw new Error(`Rate limit bereikt (429). Probeer over een minuut opnieuw.`);
+    }
+    if (response.status === 403) {
+      throw new Error(`Geen toegang (403). Check je API token.`);
+    }
+    throw new Error(`Football-Data.org error: HTTP ${response.status}`);
   }
 
   const data = await response.json();
+  const matches = data.matches || [];
   
-  // Check op rate limit issues of error messages
-  if (data.errors && Object.keys(data.errors).length > 0) {
-    throw new Error(`API-Football errors: ${JSON.stringify(data.errors)}`);
-  }
-  
-  const fixtures = data.response || [];
-  
-  // Debug: log status counts naar console
   if (typeof console !== "undefined") {
     const statusCounts = {};
-    fixtures.forEach(fx => {
-      const s = fx.fixture?.status?.short || "unknown";
+    matches.forEach(m => {
+      const s = m.status || "unknown";
       statusCounts[s] = (statusCounts[s] || 0) + 1;
     });
-    console.log("[API-Football] Fixtures opgehaald:", fixtures.length, "Statussen:", statusCounts);
+    console.log("[Football-Data.org] Matches opgehaald:", matches.length, "Statussen:", statusCounts);
   }
   
-  return fixtures;
+  return matches;
 }
 
-// Match een API-Football fixture aan onze interne wedstrijd-ID
-function matchApiFootballToInternal(fixture, allResults = {}) {
-  const teams = fixture.teams || {};
-  const goals = fixture.goals || {};
-  const status = fixture.fixture?.status?.short;
+function matchFootballDataToInternal(fdMatch, allResults = {}) {
+  if (fdMatch.status !== "FINISHED") return null;
   
-  // Alleen wedstrijden die zijn afgelopen (FT = Full Time, AET = After Extra Time, PEN = Penalties)
-  // Negeer: NS (Not Started), 1H, HT, 2H (live), CANC, PST (uitgesteld), TBD, etc.
-  const FINISHED_STATUSES = ["FT", "AET", "PEN"];
-  if (!FINISHED_STATUSES.includes(status)) return null;
+  const score = fdMatch.score?.fullTime;
+  if (!score || score.home == null || score.away == null) return null;
   
-  if (goals.home == null || goals.away == null) return null;
-  
-  const home = normalizeTeam(teams.home?.name);
-  const away = normalizeTeam(teams.away?.name);
-  if (!home || !away) return null;
+  const home = normalizeTeam(fdMatch.homeTeam?.name);
+  const away = normalizeTeam(fdMatch.awayTeam?.name);
+  if (!home || !away) {
+    if (typeof console !== "undefined") {
+      console.warn("[Football-Data.org] Onbekende teams:", fdMatch.homeTeam?.name, "vs", fdMatch.awayTeam?.name);
+    }
+    return null;
+  }
 
-  // 1. Probeer groepsfase (match op exact home/away combinatie)
   const groupMatch = MATCHES.find((m) =>
     (m.home === home && m.away === away) ||
     (m.home === away && m.away === home)
@@ -127,16 +109,13 @@ function matchApiFootballToInternal(fixture, allResults = {}) {
   if (groupMatch) {
     let hScore, aScore;
     if (groupMatch.home === home) {
-      hScore = goals.home;
-      aScore = goals.away;
+      hScore = score.home; aScore = score.away;
     } else {
-      hScore = goals.away;
-      aScore = goals.home;
+      hScore = score.away; aScore = score.home;
     }
     return { matchId: groupMatch.id, home: hScore, away: aScore };
   }
 
-  // 2. Probeer knockout via bracket resolution
   for (const ko of KO_MATCHES) {
     const homeR = resolveSlot(ko.home, allResults);
     const awayR = resolveSlot(ko.away, allResults);
@@ -146,11 +125,9 @@ function matchApiFootballToInternal(fixture, allResults = {}) {
         (homeR.team === away && awayR.team === home)) {
       let hScore, aScore;
       if (homeR.team === home) {
-        hScore = goals.home;
-        aScore = goals.away;
+        hScore = score.home; aScore = score.away;
       } else {
-        hScore = goals.away;
-        aScore = goals.home;
+        hScore = score.away; aScore = score.home;
       }
       return { matchId: ko.id, home: hScore, away: aScore };
     }
@@ -218,8 +195,6 @@ function matchOpenfootballToInternal(ofMatch, allResults = {}) {
 
 // ================================================================
 // HOOFDFUNCTIE: syncResults
-// Probeert eerst API-Football, valt terug op openfootball als dat faalt
-// Returns: { source, updates: [{matchId, home, away}], errors: [] }
 // ================================================================
 
 export async function syncResults(existingResults = {}) {
@@ -227,13 +202,12 @@ export async function syncResults(existingResults = {}) {
   const errors = [];
   let source = "none";
 
-  // 1. PROBEER API-FOOTBALL EERST
   try {
-    const fixtures = await fetchApiFootballResults();
-    source = "api-football";
+    const matches = await fetchFootballDataResults();
+    source = "football-data";
     
-    for (const fx of fixtures) {
-      const mapped = matchApiFootballToInternal(fx, existingResults);
+    for (const fdMatch of matches) {
+      const mapped = matchFootballDataToInternal(fdMatch, existingResults);
       if (mapped) {
         const existing = existingResults[mapped.matchId];
         const hasChanged = !existing || 
@@ -247,11 +221,10 @@ export async function syncResults(existingResults = {}) {
     
     return { source, updates, errors };
   } catch (err) {
-    errors.push(`API-Football faalde: ${err.message}`);
-    console.warn("API-Football faalde, probeer openfootball fallback:", err.message);
+    errors.push(`Football-Data.org faalde: ${err.message}`);
+    console.warn("Football-Data.org faalde, probeer openfootball fallback:", err.message);
   }
 
-  // 2. FALLBACK: OPENFOOTBALL
   try {
     const data = await fetchOpenfootballResults();
     source = "openfootball";

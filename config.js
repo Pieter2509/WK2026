@@ -23,3 +23,9 @@ export const ADMIN_PASSWORD = "Pieter2509";
 // Standaard: vlak voor de openingsmatch (11 juni 2026, 21:00 NL tijd)
 // Zet op null om geen deadline te hebben
 export const PREDICTION_DEADLINE = null;
+
+// API-Football key voor live uitslagen (gratis tier, 100 calls/dag)
+// Krijg een gratis key op: https://www.api-football.com
+// Deze key wordt gedeeld tussen wksimps en weekendje weg poul
+// Sync interval staat op 30 min om binnen 100 calls/dag te blijven
+export const API_FOOTBALL_KEY = "b8f6b9f8d54d5184e3ddf38e24c02622";

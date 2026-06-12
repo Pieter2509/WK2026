@@ -445,27 +445,35 @@ async function runAutoSync(silent = false) {
   updateSyncStatus("Bezig met synchroniseren...");
 
   try {
-    const stats = await syncResults(state.results, async (matchId, home, away) => {
-      await setDoc(doc(db, "results", matchId), {
-        home: Number(home),
-        away: Number(away),
+    const result = await syncResults(state.results);
+    // result = { source, updates: [{matchId, home, away}], errors: [] }
+    
+    let synced = 0;
+    for (const update of result.updates) {
+      await setDoc(doc(db, "results", update.matchId), {
+        home: Number(update.home),
+        away: Number(update.away),
         updatedAt: serverTimestamp(),
-        source: "openfootball",
+        source: result.source,
       });
-      state.results[matchId] = { home: Number(home), away: Number(away) };
-    });
+      state.results[update.matchId] = { home: Number(update.home), away: Number(update.away) };
+      synced++;
+    }
 
     state.lastSyncTime = new Date();
-    state.lastSyncStats = stats;
+    state.lastSyncStats = { synced, errors: result.errors, source: result.source };
 
     if (!silent) {
-      if (stats.synced > 0) {
-        showBanner(`${stats.synced} nieuwe uitslag${stats.synced > 1 ? 'en' : ''} gesynchroniseerd`, "success");
-      } else if (stats.errors.length > 0) {
-        showBanner(`Sync klaar met ${stats.errors.length} fout(en). Check console.`, "warning");
-        console.warn("Sync errors:", stats.errors);
+      if (synced > 0) {
+        const sourceLabel = result.source === "api-football" ? "API-Football" : "openfootball";
+        showBanner(`${synced} nieuwe uitslag${synced > 1 ? 'en' : ''} gesynchroniseerd (via ${sourceLabel})`, "success");
+      } else if (result.errors.length > 0) {
+        showBanner(`Sync klaar met ${result.errors.length} fout(en). Check console.`, "warning");
+        console.warn("Sync errors:", result.errors);
       } else {
-        showBanner("Alles is up-to-date", "success", 2000);
+        const sourceLabel = result.source === "api-football" ? "API-Football" : 
+                            result.source === "openfootball" ? "openfootball" : "geen bron";
+        showBanner(`Alles is up-to-date (${sourceLabel})`, "success", 2000);
       }
     }
 
@@ -491,7 +499,7 @@ function toggleAutoSync() {
   } else {
     // Sync direct, dan elke 5 minuten
     runAutoSync(true);
-    state.autoSyncInterval = setInterval(() => runAutoSync(true), 5 * 60 * 1000);
+    state.autoSyncInterval = setInterval(() => runAutoSync(true), 30 * 60 * 1000);
     state.autoSyncEnabled = true;
     localStorage.setItem("wk2026-autosync", "true");
     showBanner("Auto-sync aan: elke 5 minuten", "success");
@@ -1129,7 +1137,7 @@ function renderAdmin() {
       <div class="sync-header">
         <div>
           <h3>Automatische uitslagen</h3>
-          <p class="sync-desc">Haal uitslagen direct op uit openfootball/worldcup.json (gratis open data, geen API-key nodig).</p>
+          <p class="sync-desc">Live uitslagen via API-Football (primair) en openfootball (backup). Sync elke 30 minuten.</p>
         </div>
       </div>
       <div class="sync-actions">
@@ -1438,7 +1446,7 @@ function init() {
       // Auto-sync ALTIJD aanzetten bij admin login (geen uitzonderingen)
       if (!state.autoSyncInterval) {
         runAutoSync(true);
-        state.autoSyncInterval = setInterval(() => runAutoSync(true), 5 * 60 * 1000);
+        state.autoSyncInterval = setInterval(() => runAutoSync(true), 30 * 60 * 1000);
         state.autoSyncEnabled = true;
         localStorage.setItem("wk2026-autosync", "true");
       }

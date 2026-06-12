@@ -499,7 +499,7 @@ function toggleAutoSync() {
   } else {
     // Sync direct, dan elke 5 minuten
     runAutoSync(true);
-    state.autoSyncInterval = setInterval(() => runAutoSync(true), 30 * 60 * 1000);
+    state.autoSyncInterval = setInterval(() => runAutoSync(true), 2 * 60 * 1000);
     state.autoSyncEnabled = true;
     localStorage.setItem("wk2026-autosync", "true");
     showBanner("Auto-sync aan: elke 5 minuten", "success");
@@ -1141,7 +1141,7 @@ function renderAdmin() {
       <div class="sync-header">
         <div>
           <h3>Automatische uitslagen</h3>
-          <p class="sync-desc">Live uitslagen via API-Football (primair) en openfootball (backup). Sync elke 30 minuten.</p>
+          <p class="sync-desc">Live uitslagen via API-Football (primair) en openfootball (backup). Sync elke 2 minuten.</p>
         </div>
       </div>
       <div class="sync-actions">
@@ -1450,7 +1450,7 @@ function init() {
       // Auto-sync ALTIJD aanzetten bij admin login (geen uitzonderingen)
       if (!state.autoSyncInterval) {
         runAutoSync(true);
-        state.autoSyncInterval = setInterval(() => runAutoSync(true), 30 * 60 * 1000);
+        state.autoSyncInterval = setInterval(() => runAutoSync(true), 2 * 60 * 1000);
         state.autoSyncEnabled = true;
         localStorage.setItem("wk2026-autosync", "true");
       }

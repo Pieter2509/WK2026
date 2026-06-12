@@ -64,8 +64,9 @@ async function fetchApiFootballResults() {
     throw new Error("Geen API-Football key geconfigureerd");
   }
 
-  // Haal alle fixtures van WK 2026 die FT (full time) zijn
-  const url = `${API_FOOTBALL_URL}?league=${WORLD_CUP_LEAGUE_ID}&season=${WORLD_CUP_SEASON}&status=FT-AET-PEN`;
+  // Haal ALLE fixtures van WK 2026 (filteren op status doen we lokaal via goals.home != null)
+  // Dit voorkomt issues als de API een wedstrijd nog niet heeft gemarkeerd als FT
+  const url = `${API_FOOTBALL_URL}?league=${WORLD_CUP_LEAGUE_ID}&season=${WORLD_CUP_SEASON}`;
   
   const response = await fetch(url, {
     headers: {
@@ -85,13 +86,31 @@ async function fetchApiFootballResults() {
     throw new Error(`API-Football errors: ${JSON.stringify(data.errors)}`);
   }
   
-  return data.response || [];
+  const fixtures = data.response || [];
+  
+  // Debug: log status counts naar console
+  if (typeof console !== "undefined") {
+    const statusCounts = {};
+    fixtures.forEach(fx => {
+      const s = fx.fixture?.status?.short || "unknown";
+      statusCounts[s] = (statusCounts[s] || 0) + 1;
+    });
+    console.log("[API-Football] Fixtures opgehaald:", fixtures.length, "Statussen:", statusCounts);
+  }
+  
+  return fixtures;
 }
 
 // Match een API-Football fixture aan onze interne wedstrijd-ID
 function matchApiFootballToInternal(fixture, allResults = {}) {
   const teams = fixture.teams || {};
   const goals = fixture.goals || {};
+  const status = fixture.fixture?.status?.short;
+  
+  // Alleen wedstrijden die zijn afgelopen (FT = Full Time, AET = After Extra Time, PEN = Penalties)
+  // Negeer: NS (Not Started), 1H, HT, 2H (live), CANC, PST (uitgesteld), TBD, etc.
+  const FINISHED_STATUSES = ["FT", "AET", "PEN"];
+  if (!FINISHED_STATUSES.includes(status)) return null;
   
   if (goals.home == null || goals.away == null) return null;
   

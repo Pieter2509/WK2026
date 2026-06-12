@@ -520,7 +520,11 @@ function updateSyncStatus(message) {
     const timeStr = `${String(time.getHours()).padStart(2,'0')}:${String(time.getMinutes()).padStart(2,'0')}`;
     const s = state.lastSyncStats;
     if (s) {
-      statusEl.textContent = `Laatst gesynchroniseerd om ${timeStr}: ${s.synced} nieuw, ${s.skipped} bestaand, ${s.unmatched} niet gekoppeld`;
+      const sourceLabel = s.source === "api-football" ? "API-Football" : 
+                          s.source === "openfootball" ? "openfootball" : "geen bron";
+      const errorCount = s.errors ? s.errors.length : 0;
+      const errorText = errorCount > 0 ? `, ${errorCount} fout(en)` : "";
+      statusEl.textContent = `Laatst gesynchroniseerd om ${timeStr} via ${sourceLabel}: ${s.synced} nieuw${errorText}`;
     } else {
       statusEl.textContent = `Laatst gesynchroniseerd om ${timeStr}`;
     }

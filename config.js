@@ -18,8 +18,7 @@ export const ADMIN_PASSWORD = "Pieter2509";
 // null = geen deadline, alleen per-wedstrijd lock van 1 uur voor aftrap
 export const PREDICTION_DEADLINE = null;
 
-// Football-Data.org API token voor live uitslagen
-// Gratis account: https://www.football-data.org/client/register
-// Gratis tier: 10 calls per minuut, inclusief WK 2026 (competition WC)
-// Updates binnen enkele minuten na een wedstrijd
-export const FOOTBALL_DATA_TOKEN = "cd8021310aec4645ac9dcf58b6160662";
+// API-Football key voor live uitslagen
+// Pro plan: 7500 calls/dag, real-time elke 15 seconden
+// Allowed Domains zijn ingesteld in API-Football dashboard
+export const API_FOOTBALL_KEY = "b8f6b9f8d54d5184e3ddf38e24c02622";

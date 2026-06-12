@@ -435,10 +435,10 @@ async function saveResult(matchId, home, away) {
 
 // ================================================================
 // AUTO-SYNC: haal uitslagen van openfootball/worldcup.json
+// Draait voor alle ingelogde gebruikers, niet alleen admins.
 // ================================================================
 
 async function runAutoSync(silent = false) {
-  if (!state.isAdmin) return;
   if (state.isSyncing) return;
 
   state.isSyncing = true;
@@ -1362,6 +1362,14 @@ function showMainApp() {
   subscribeToResults();
   subscribeToAllPredictions();
 
+  // Auto-sync starten voor alle gebruikers (niet alleen admins)
+  // zodat uitslagen altijd actueel zijn zodra iemand de site bezoekt
+  if (!state.autoSyncInterval) {
+    runAutoSync(true);
+    state.autoSyncInterval = setInterval(() => runAutoSync(true), 2 * 60 * 1000);
+    state.autoSyncEnabled = true;
+  }
+
   renderCurrentView();
 }
 
@@ -1447,15 +1455,9 @@ function init() {
     const pw = document.getElementById("admin-password").value;
     if (pw === ADMIN_PASSWORD) {
       state.isAdmin = true;
-      // Auto-sync ALTIJD aanzetten bij admin login (geen uitzonderingen)
-      if (!state.autoSyncInterval) {
-        runAutoSync(true);
-        state.autoSyncInterval = setInterval(() => runAutoSync(true), 2 * 60 * 1000);
-        state.autoSyncEnabled = true;
-        localStorage.setItem("wk2026-autosync", "true");
-      }
+      // Auto-sync draait al voor alle gebruikers; hier hoeven we alleen te renderen
       renderAdmin();
-      showBanner("Beheer geopend, auto-sync gestart", "success");
+      showBanner("Beheer geopend", "success");
     } else {
       showBanner("Onjuist wachtwoord", "error");
     }

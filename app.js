@@ -832,6 +832,57 @@ function handleScoreBlur(e) {
 // RENDER: LEADERBOARD
 // ================================================================
 
+function renderPlayerDetail(userKey) {
+  const userPreds = state.allPredictions[userKey]?.predictions || {};
+  const allMatches = [...MATCHES, ...KO_MATCHES];
+  const finishedMatches = allMatches.filter(m => {
+    const r = state.results[m.id];
+    return r && r.home != null && r.away != null;
+  });
+
+  if (finishedMatches.length === 0) return '<p style="color:var(--ink-soft);font-size:13px;padding:12px 0;">Nog geen gespeelde wedstrijden.</p>';
+
+  let html = '<div class="player-detail-list">';
+  for (const match of finishedMatches) {
+    const result = state.results[match.id];
+    const pred = userPreds[match.id];
+    const pts = pred ? calculatePoints(pred, result) : 0;
+    const hasPred = pred && pred.home != null;
+
+    const homeFlag = FLAGS[match.home] || "🏳";
+    const awayFlag = FLAGS[match.away] || "🏳";
+
+    let ptsBadge = "";
+    if (!hasPred) {
+      ptsBadge = '<span class="detail-pts none">—</span>';
+    } else if (pts === SCORING.EXACT_SCORE) {
+      ptsBadge = `<span class="detail-pts exact">+${pts}</span>`;
+    } else if (pts === SCORING.GOAL_DIFF) {
+      ptsBadge = `<span class="detail-pts diff">+${pts}</span>`;
+    } else if (pts === SCORING.WINNER) {
+      ptsBadge = `<span class="detail-pts winner">+${pts}</span>`;
+    } else {
+      ptsBadge = `<span class="detail-pts zero">+0</span>`;
+    }
+
+    html += `
+      <div class="detail-match">
+        <div class="detail-teams">
+          <span>${homeFlag} ${teamAbbr(match.home)}</span>
+          <span class="detail-score">
+            <span class="detail-result">${result.home}–${result.away}</span>
+            ${hasPred ? `<span class="detail-pred">${pred.home}–${pred.away}</span>` : '<span class="detail-pred no-pred">geen</span>'}
+          </span>
+          <span>${teamAbbr(match.away)} ${awayFlag}</span>
+        </div>
+        ${ptsBadge}
+      </div>
+    `;
+  }
+  html += '</div>';
+  return html;
+}
+
 function renderLeaderboard() {
   const container = document.getElementById("leaderboard-container");
 
@@ -870,7 +921,7 @@ function renderLeaderboard() {
     players.forEach((p, i) => {
       const isYou = p.key === state.currentUser?.key;
       html += `
-        <div class="leaderboard-row ${isYou ? 'you' : ''}">
+        <div class="leaderboard-row ${isYou ? 'you' : ''}" data-player-key="${p.key}">
           <div class="rank">${i + 1}</div>
           <div class="player-name">
             ${p.name}
@@ -880,15 +931,38 @@ function renderLeaderboard() {
             ${p.exactCount} exact, ${p.correctCount} goed<br>
             uit ${p.finishedCount} wedstrijden
           </div>
-          <div class="player-points">${p.total}</div>
+          <div class="player-points-wrap">
+            <div class="player-points">${p.total}</div>
+            <div class="expand-arrow">▸</div>
+          </div>
+        </div>
+        <div class="player-detail" id="detail-${p.key}">
+          ${renderPlayerDetail(p.key)}
         </div>
       `;
     });
   }
 
   container.innerHTML = html;
-}
 
+  // Klik op rij opent/sluit dropdown
+  container.querySelectorAll(".leaderboard-row[data-player-key]").forEach(row => {
+    row.style.cursor = "pointer";
+    row.addEventListener("click", () => {
+      const key = row.dataset.playerKey;
+      const detail = document.getElementById(`detail-${key}`);
+      if (!detail) return;
+      const isOpen = row.classList.contains("expanded");
+      // Sluit alle andere
+      container.querySelectorAll(".player-detail").forEach(d => d.classList.remove("open"));
+      container.querySelectorAll(".leaderboard-row").forEach(r => r.classList.remove("expanded"));
+      if (!isOpen) {
+        detail.classList.add("open");
+        row.classList.add("expanded");
+      }
+    });
+  });
+}
 // ================================================================
 // RENDER: STANDINGS
 // ================================================================

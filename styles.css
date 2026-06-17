@@ -802,6 +802,124 @@ body {
 }
 
 /* ================================================================
+   LEADERBOARD DETAIL DROPDOWN
+   ================================================================ */
+
+.leaderboard-row {
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.leaderboard-row:hover {
+  background: rgba(0,0,0,0.02);
+}
+
+.leaderboard-row.expanded {
+  background: rgba(230, 75, 26, 0.04);
+}
+
+.player-points-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.expand-arrow {
+  font-size: 14px;
+  color: var(--ink-light);
+  transition: transform 0.2s;
+  line-height: 1;
+}
+
+.leaderboard-row.expanded .expand-arrow {
+  transform: rotate(90deg);
+  color: var(--accent);
+}
+
+.player-detail {
+  display: none;
+  border-bottom: 1px solid var(--line-soft);
+  background: var(--bg-card);
+  padding: 0 24px;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.25s ease, padding 0.25s ease;
+}
+
+.player-detail.open {
+  display: block;
+  max-height: 2000px;
+  padding: 12px 24px 16px;
+}
+
+.player-detail-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.detail-match {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.detail-match:last-child {
+  border-bottom: none;
+}
+
+.detail-teams {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+}
+
+.detail-score {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 70px;
+}
+
+.detail-result {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--ink);
+}
+
+.detail-pred {
+  font-size: 11px;
+  color: var(--ink-light);
+  background: var(--line-soft);
+  padding: 1px 6px;
+  border-radius: 3px;
+}
+
+.detail-pred.no-pred {
+  color: var(--ink-light);
+  font-style: italic;
+}
+
+.detail-pts {
+  font-family: var(--display);
+  font-weight: 900;
+  font-size: 15px;
+  min-width: 36px;
+  text-align: right;
+}
+
+.detail-pts.exact { color: #2a9d3f; }
+.detail-pts.diff  { color: #e8a020; }
+.detail-pts.winner { color: var(--accent); }
+.detail-pts.zero  { color: var(--ink-light); }
+.detail-pts.none  { color: var(--line); }
+
+/* ================================================================
    STANDINGS
    ================================================================ */
 

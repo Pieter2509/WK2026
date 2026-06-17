@@ -6,8 +6,8 @@
 
 export const SCORING = {
   EXACT_SCORE: 5,
-  GOAL_DIFF: 3,
-  WINNER: 1,
+  GOAL_DIFF: 4,
+  WINNER: 3,
 };
 
 // Alle 48 teams: Engelse canonieke naam -> Nederlandse weergave + vlag + FIFA afkorting (3 letters)

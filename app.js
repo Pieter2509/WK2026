@@ -854,7 +854,7 @@ function renderPlayerDetail(userKey) {
 
     let ptsBadge = "";
     if (!hasPred) {
-      ptsBadge = '<span class="detail-pts none">—</span>';
+      ptsBadge = '<span class="detail-pts none">-</span>';
     } else if (pts === SCORING.EXACT_SCORE) {
       ptsBadge = `<span class="detail-pts exact">+${pts}</span>`;
     } else if (pts === SCORING.GOAL_DIFF) {
@@ -1080,7 +1080,9 @@ function renderKnockoutView() {
 
   for (const round of rounds) {
     const open = isRoundOpen(round, state.results);
-    const roundMatches = KO_MATCHES.filter(m => m.round === round);
+    const roundMatches = KO_MATCHES
+      .filter(m => m.round === round)
+      .sort((a, b) => a.date.localeCompare(b.date));
     const roundName = KO_ROUND_NAMES[round];
 
     html += `

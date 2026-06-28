@@ -16,22 +16,22 @@ import { GROUPS, MATCHES } from "./data.js";
 
 export const KO_MATCHES = [
   // ===== RONDE VAN 32 (28 juni - 3 juli) =====
-  { id: 'R32-1', round: 'R32', home: '1A', away: '3CEFHI', date: '2026-06-28T19:00', venue: 'TBD' },
-  { id: 'R32-2', round: 'R32', home: '1B', away: '3EFGIJ', date: '2026-06-28T22:00', venue: 'TBD' },
-  { id: 'R32-3', round: 'R32', home: '1C', away: '2F', date: '2026-06-29T19:00', venue: 'TBD' },
-  { id: 'R32-4', round: 'R32', home: '1D', away: '3BEFIJ', date: '2026-06-29T22:00', venue: 'TBD' },
-  { id: 'R32-5', round: 'R32', home: '1E', away: '3ABCDF', date: '2026-06-30T19:00', venue: 'TBD' },
-  { id: 'R32-6', round: 'R32', home: '1F', away: '2C', date: '2026-06-30T22:00', venue: 'TBD' },
-  { id: 'R32-7', round: 'R32', home: '1G', away: '3AEHIJ', date: '2026-07-01T19:00', venue: 'TBD' },
-  { id: 'R32-8', round: 'R32', home: '1H', away: '2J', date: '2026-07-01T22:00', venue: 'TBD' },
-  { id: 'R32-9', round: 'R32', home: '1I', away: '3CDFGH', date: '2026-07-02T19:00', venue: 'Toronto' },
-  { id: 'R32-10', round: 'R32', home: '1J', away: '2H', date: '2026-07-02T22:00', venue: 'Vancouver' },
-  { id: 'R32-11', round: 'R32', home: '1K', away: '3DEIJL', date: '2026-07-03T19:00', venue: 'Miami' },
-  { id: 'R32-12', round: 'R32', home: '1L', away: '3EHIJK', date: '2026-07-03T21:00', venue: 'Kansas City' },
-  { id: 'R32-13', round: 'R32', home: '2A', away: '2B', date: '2026-06-29T01:00', venue: 'TBD' },
-  { id: 'R32-14', round: 'R32', home: '2D', away: '2G', date: '2026-06-30T01:00', venue: 'TBD' },
-  { id: 'R32-15', round: 'R32', home: '2E', away: '2I', date: '2026-07-01T01:00', venue: 'TBD' },
-  { id: 'R32-16', round: 'R32', home: '2K', away: '2L', date: '2026-07-03T23:00', venue: 'Dallas' },
+  { id: 'R32-1', round: 'R32', home: '1A', away: '3CEFHI', date: '2026-07-01T03:00', venue: 'Estadio Azteca, Mexico City' },
+  { id: 'R32-2', round: 'R32', home: '1B', away: '3EFGIJ', date: '2026-07-03T05:00', venue: 'BC Place, Vancouver' },
+  { id: 'R32-3', round: 'R32', home: '1C', away: '2F', date: '2026-06-29T19:00', venue: 'NRG Stadium, Houston' },
+  { id: 'R32-4', round: 'R32', home: '1D', away: '3BEFIJ', date: '2026-07-02T02:00', venue: "Levi's Stadium, Santa Clara" },
+  { id: 'R32-5', round: 'R32', home: '1E', away: '3ABCDF', date: '2026-06-29T22:30', venue: 'Gillette Stadium, Foxborough' },
+  { id: 'R32-6', round: 'R32', home: '1F', away: '2C', date: '2026-06-30T03:00', venue: 'Estadio Akron, Guadalajara' },
+  { id: 'R32-7', round: 'R32', home: '1G', away: '3AEHIJ', date: '2026-07-01T22:00', venue: 'Lumen Field, Seattle' },
+  { id: 'R32-8', round: 'R32', home: '1H', away: '2J', date: '2026-07-02T21:00', venue: 'SoFi Stadium, Los Angeles' },
+  { id: 'R32-9', round: 'R32', home: '1I', away: '3CDFGH', date: '2026-06-30T23:00', venue: 'MetLife Stadium, New Jersey' },
+  { id: 'R32-10', round: 'R32', home: '1J', away: '2H', date: '2026-07-04T00:00', venue: 'Hard Rock Stadium, Miami' },
+  { id: 'R32-11', round: 'R32', home: '1K', away: '3DEIJL', date: '2026-07-04T03:30', venue: 'Dallas/Arlington' },
+  { id: 'R32-12', round: 'R32', home: '1L', away: '3EHIJK', date: '2026-07-01T18:00', venue: 'Mercedes-Benz Stadium, Atlanta' },
+  { id: 'R32-13', round: 'R32', home: '2A', away: '2B', date: '2026-06-28T21:00', venue: 'SoFi Stadium, Los Angeles' },
+  { id: 'R32-14', round: 'R32', home: '2D', away: '2G', date: '2026-07-03T20:00', venue: 'AT&T Stadium, Arlington' },
+  { id: 'R32-15', round: 'R32', home: '2E', away: '2I', date: '2026-06-30T19:00', venue: 'AT&T Stadium, Arlington' },
+  { id: 'R32-16', round: 'R32', home: '2K', away: '2L', date: '2026-07-03T01:00', venue: 'BMO Field, Toronto' },
 
   // ===== RONDE VAN 16 (4-7 juli) - Officiele FIFA paringen volgens PDF =====
   // Match 89-96 in de officiele bracket
@@ -160,20 +160,34 @@ function getBestThirds(allResults) {
 // Match een ronde-32 placeholder (bv "3ABCDF") aan een echt team
 // Returns: teamnaam of null als nog niet bekend
 // ================================================================
+//
+// FIFA Annex C bepaalt PER COMBINATIE van 8 kwalificerende groepen welke
+// 3e-plaatser naar welke slot gaat. Het groepsfase is op 27 juni geeindigd
+// met de volgende 8 beste 3e-plaatsers: Ecuador (E), Paraguay (D),
+// Sweden (F), Bosnia (B), Senegal (I), Cape Verde (H? nee wacht, H = 2nd),
+// DR Congo (K), Algeria (J).
+//
+// Volgens officiele FIFA bracket-mapping (zoals gepubliceerd 27 juni 2026):
+const THIRD_PLACE_FIXED_MAPPING = {
+  "3CEFHI": "Ecuador",       // → 1A (Mexico)
+  "3EFGIJ": "Algeria",       // → 1B (Switzerland)
+  "3BEFIJ": "Bosnia and Herzegovina", // → 1D (USA)
+  "3ABCDF": "Paraguay",      // → 1E (Germany)
+  "3AEHIJ": "Senegal",       // → 1G (Belgium)
+  "3CDFGH": "Sweden",        // → 1I (France)
+  "3DEIJL": "Croatia",       // → 1K (Colombia) - in onze groep L
+  "3EHIJK": "DR Congo",      // → 1L (England)
+};
+
 function resolveThirdPlaceSlot(placeholder, bestThirds) {
+  // Eerst proberen via vaste FIFA mapping (na groepsfase definitief)
+  if (THIRD_PLACE_FIXED_MAPPING[placeholder]) {
+    return THIRD_PLACE_FIXED_MAPPING[placeholder];
+  }
+  
+  // Fallback voor onverwachte placeholders (zou niet moeten voorkomen)
   if (!bestThirds || bestThirds.length < 8) return null;
-
-  // "3ABCDF" betekent: de beste 3e die uit een van de groepen A/B/C/D/F komt
-  // FIFA heeft een vaste mapping voor welke combinatie van 3e plaatsers wat krijgt
-  // Op basis van welke 8 groepen kwalificeren (er zijn C(12,8) = 495 mogelijkheden,
-  // maar FIFA gebruikt een tabel die we hier vereenvoudigen):
-  // We koppelen ze in volgorde van ranking aan de slots, gefilterd op groep.
-
-  const groupsInSlot = placeholder.substring(1); // bv "ABCDF"
-
-  // Vind de hoogst gerankte 3e plaatser uit een van deze groepen
-  // die nog niet is toegewezen aan een ander slot
-  // (Voor de poul-app is een vereenvoudigde toewijzing prima)
+  const groupsInSlot = placeholder.substring(1);
   for (const third of bestThirds) {
     if (groupsInSlot.includes(third.group)) {
       return third.team;

@@ -175,7 +175,7 @@ const THIRD_PLACE_FIXED_MAPPING = {
   "3ABCDF": "Paraguay",      // → 1E (Germany)
   "3AEHIJ": "Senegal",       // → 1G (Belgium)
   "3CDFGH": "Sweden",        // → 1I (France)
-  "3DEIJL": "Croatia",       // → 1K (Colombia) - in onze groep L
+  "3DEIJL": "Ghana",         // → 1K (Colombia) - Ghana is 3e in groep L
   "3EHIJK": "DR Congo",      // → 1L (England)
 };
 

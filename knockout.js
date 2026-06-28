@@ -33,29 +33,29 @@ export const KO_MATCHES = [
   { id: 'R32-15', round: 'R32', home: '2E', away: '2I', date: '2026-07-01T01:00', venue: 'TBD' },
   { id: 'R32-16', round: 'R32', home: '2K', away: '2L', date: '2026-07-03T23:00', venue: 'Dallas' },
 
-  // ===== RONDE VAN 16 (4-7 juli) =====
-  // Winnaars van Ronde van 32 worden gekoppeld in vooraf bepaalde brackets
-  { id: 'R16-1', round: 'R16', home: 'W:R32-1', away: 'W:R32-3', date: '2026-07-04T19:00', venue: 'TBD' },
-  { id: 'R16-2', round: 'R16', home: 'W:R32-5', away: 'W:R32-13', date: '2026-07-04T22:00', venue: 'TBD' },
-  { id: 'R16-3', round: 'R16', home: 'W:R32-2', away: 'W:R32-15', date: '2026-07-05T19:00', venue: 'TBD' },
-  { id: 'R16-4', round: 'R16', home: 'W:R32-6', away: 'W:R32-16', date: '2026-07-05T22:00', venue: 'TBD' },
-  { id: 'R16-5', round: 'R16', home: 'W:R32-4', away: 'W:R32-14', date: '2026-07-06T19:00', venue: 'TBD' },
-  { id: 'R16-6', round: 'R16', home: 'W:R32-8', away: 'W:R32-10', date: '2026-07-06T22:00', venue: 'TBD' },
-  { id: 'R16-7', round: 'R16', home: 'W:R32-7', away: 'W:R32-9', date: '2026-07-07T19:00', venue: 'TBD' },
-  { id: 'R16-8', round: 'R16', home: 'W:R32-11', away: 'W:R32-12', date: '2026-07-07T22:00', venue: 'TBD' },
+  // ===== RONDE VAN 16 (4-7 juli) - Officiele FIFA paringen volgens PDF =====
+  // Match 89-96 in de officiele bracket
+  { id: 'R16-1', round: 'R16', home: 'W:R32-13', away: 'W:R32-6',  date: '2026-07-04T19:00', venue: 'TBD' }, // Match 90: W73-W75
+  { id: 'R16-2', round: 'R16', home: 'W:R32-5',  away: 'W:R32-9',  date: '2026-07-04T23:00', venue: 'TBD' }, // Match 89: W74-W77
+  { id: 'R16-3', round: 'R16', home: 'W:R32-3',  away: 'W:R32-15', date: '2026-07-05T22:00', venue: 'TBD' }, // Match 91: W76-W78
+  { id: 'R16-4', round: 'R16', home: 'W:R32-1',  away: 'W:R32-12', date: '2026-07-06T02:00', venue: 'TBD' }, // Match 92: W79-W80
+  { id: 'R16-5', round: 'R16', home: 'W:R32-16', away: 'W:R32-8',  date: '2026-07-06T21:00', venue: 'TBD' }, // Match 93: W83-W84
+  { id: 'R16-6', round: 'R16', home: 'W:R32-4',  away: 'W:R32-7',  date: '2026-07-07T02:00', venue: 'TBD' }, // Match 94: W81-W82
+  { id: 'R16-7', round: 'R16', home: 'W:R32-10', away: 'W:R32-14', date: '2026-07-07T18:00', venue: 'TBD' }, // Match 95: W86-W88
+  { id: 'R16-8', round: 'R16', home: 'W:R32-2',  away: 'W:R32-11', date: '2026-07-07T22:00', venue: 'TBD' }, // Match 96: W85-W87
 
-  // ===== KWARTFINALES (9-11 juli) =====
-  { id: 'QF-1', round: 'QF', home: 'W:R16-1', away: 'W:R16-2', date: '2026-07-09T19:00', venue: 'TBD' },
-  { id: 'QF-2', round: 'QF', home: 'W:R16-3', away: 'W:R16-4', date: '2026-07-09T22:00', venue: 'TBD' },
-  { id: 'QF-3', round: 'QF', home: 'W:R16-5', away: 'W:R16-6', date: '2026-07-10T19:00', venue: 'TBD' },
-  { id: 'QF-4', round: 'QF', home: 'W:R16-7', away: 'W:R16-8', date: '2026-07-10T22:00', venue: 'TBD' },
+  // ===== KWARTFINALES (9-12 juli) - Officiele FIFA bracket volgens PDF =====
+  { id: 'QF-1', round: 'QF', home: 'W:R16-2', away: 'W:R16-1', date: '2026-07-09T22:00', venue: 'TBD' }, // Match 97: W89-W90
+  { id: 'QF-2', round: 'QF', home: 'W:R16-5', away: 'W:R16-6', date: '2026-07-10T21:00', venue: 'TBD' }, // Match 98: W93-W94
+  { id: 'QF-3', round: 'QF', home: 'W:R16-3', away: 'W:R16-4', date: '2026-07-11T23:00', venue: 'TBD' }, // Match 99: W91-W92
+  { id: 'QF-4', round: 'QF', home: 'W:R16-7', away: 'W:R16-8', date: '2026-07-12T03:00', venue: 'TBD' }, // Match 100: W95-W96
 
   // ===== HALVE FINALES (14-15 juli) =====
-  { id: 'SF-1', round: 'SF', home: 'W:QF-1', away: 'W:QF-2', date: '2026-07-14T21:00', venue: 'AT&T Stadium, Dallas' },
-  { id: 'SF-2', round: 'SF', home: 'W:QF-3', away: 'W:QF-4', date: '2026-07-15T21:00', venue: 'Mercedes-Benz Stadium, Atlanta' },
+  { id: 'SF-1', round: 'SF', home: 'W:QF-1', away: 'W:QF-2', date: '2026-07-14T21:00', venue: 'AT&T Stadium, Dallas' },    // Match 101: W97-W98
+  { id: 'SF-2', round: 'SF', home: 'W:QF-3', away: 'W:QF-4', date: '2026-07-15T21:00', venue: 'Mercedes-Benz Stadium, Atlanta' }, // Match 102: W99-W100
 
   // ===== TROOSTFINALE (18 juli) =====
-  { id: 'TF', round: 'TF', home: 'L:SF-1', away: 'L:SF-2', date: '2026-07-18T21:00', venue: 'Hard Rock Stadium, Miami' },
+  { id: 'TF', round: 'TF', home: 'L:SF-1', away: 'L:SF-2', date: '2026-07-18T23:00', venue: 'Hard Rock Stadium, Miami' },
 
   // ===== FINALE (19 juli) =====
   { id: 'F', round: 'F', home: 'W:SF-1', away: 'W:SF-2', date: '2026-07-19T21:00', venue: 'MetLife Stadium, New Jersey' },

@@ -224,7 +224,9 @@ export function resolveSlot(placeholder, allResults) {
       return { team: null, resolved: false, label: placeholder };
     }
 
-    const homeWins = result.home > result.away;
+    const homeWins = result.winner
+      ? result.winner === "home"
+      : result.home > result.away;
     if (isWinner) {
       return { team: homeWins ? homeResolved.team : awayResolved.team, resolved: true };
     } else {

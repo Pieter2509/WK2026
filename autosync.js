@@ -91,13 +91,49 @@ async function fetchApiFootballResults() {
 function matchApiFootballToInternal(fixture, allResults = {}) {
   const teams = fixture.teams || {};
   const goals = fixture.goals || {};
+  const score = fixture.score || {};
   const status = fixture.fixture?.status?.short;
   
   // Alleen wedstrijden die zijn afgelopen (FT = Full Time, AET = After Extra Time, PEN = Penalties)
   const FINISHED_STATUSES = ["FT", "AET", "PEN"];
   if (!FINISHED_STATUSES.includes(status)) return null;
   
-  if (goals.home == null || goals.away == null) return null;
+  // Voor knockout wedstrijden willen we de 90-minuten stand gebruiken (niet na verlenging/penalty's)
+  // Dit is hoe alle gangbare poulen het doen (intikkertje, Toto, etc.)
+  // - score.fulltime = stand na 90 minuten (incl. blessuretijd)
+  // - score.extratime = stand na verlenging (alleen gevuld bij AET/PEN)
+  // - score.penalty = penalty shoot-out goals
+  // - goals = totale eindstand (= fulltime of extratime, exclusief penalty's)
+  let homeGoals, awayGoals;
+  let winner = null; // "home" of "away", nodig voor knockout bracket
+  if (status === "AET" || status === "PEN") {
+    // Knockout met verlenging: pak 90-min stand uit fulltime
+    if (score.fulltime && score.fulltime.home != null && score.fulltime.away != null) {
+      homeGoals = score.fulltime.home;
+      awayGoals = score.fulltime.away;
+    } else {
+      // Fallback naar goals als fulltime niet beschikbaar is
+      homeGoals = goals.home;
+      awayGoals = goals.away;
+    }
+    // Winnaar bepalen op basis van eindstand (na verlenging/penalty's)
+    if (status === "PEN" && score.penalty) {
+      winner = score.penalty.home > score.penalty.away ? "home" : "away";
+    } else if (goals.home != null && goals.away != null) {
+      // AET: de goals bevatten de eindstand na verlenging
+      winner = goals.home > goals.away ? "home" : "away";
+    }
+  } else {
+    // Reguliere FT: goals = fulltime
+    homeGoals = goals.home;
+    awayGoals = goals.away;
+    // Winnaar volgt uit de reguliere score
+    if (homeGoals != null && awayGoals != null && homeGoals !== awayGoals) {
+      winner = homeGoals > awayGoals ? "home" : "away";
+    }
+  }
+  
+  if (homeGoals == null || awayGoals == null) return null;
   
   const home = normalizeTeam(teams.home?.name);
   const away = normalizeTeam(teams.away?.name);
@@ -117,9 +153,9 @@ function matchApiFootballToInternal(fixture, allResults = {}) {
   if (groupMatch) {
     let hScore, aScore;
     if (groupMatch.home === home) {
-      hScore = goals.home; aScore = goals.away;
+      hScore = homeGoals; aScore = awayGoals;
     } else {
-      hScore = goals.away; aScore = goals.home;
+      hScore = awayGoals; aScore = homeGoals;
     }
     return { matchId: groupMatch.id, home: hScore, away: aScore };
   }
@@ -132,13 +168,16 @@ function matchApiFootballToInternal(fixture, allResults = {}) {
 
     if ((homeR.team === home && awayR.team === away) ||
         (homeR.team === away && awayR.team === home)) {
-      let hScore, aScore;
+      let hScore, aScore, winnerSide;
       if (homeR.team === home) {
-        hScore = goals.home; aScore = goals.away;
+        hScore = homeGoals; aScore = awayGoals;
+        winnerSide = winner;
       } else {
-        hScore = goals.away; aScore = goals.home;
+        hScore = awayGoals; aScore = homeGoals;
+        // Draai winner om als teams gespiegeld zijn
+        winnerSide = winner === "home" ? "away" : winner === "away" ? "home" : null;
       }
-      return { matchId: ko.id, home: hScore, away: aScore };
+      return { matchId: ko.id, home: hScore, away: aScore, winner: winnerSide };
     }
   }
 
@@ -220,9 +259,11 @@ export async function syncResults(existingResults = {}) {
       const mapped = matchApiFootballToInternal(fx, existingResults);
       if (mapped) {
         const existing = existingResults[mapped.matchId];
+        // Update indien score verandert, OF als winner nieuw is (bv na verlenging)
         const hasChanged = !existing || 
           existing.home !== mapped.home || 
-          existing.away !== mapped.away;
+          existing.away !== mapped.away ||
+          (mapped.winner && !existing.winner);
         if (hasChanged) {
           updates.push(mapped);
         }

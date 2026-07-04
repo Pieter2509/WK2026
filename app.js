@@ -56,6 +56,8 @@ const state = {
   lastSyncTime: null,
   lastSyncStats: null,
   isSyncing: false,
+  // Knockout view: welke rondes zijn uitgeklapt
+  knockoutExpanded: {},
 };
 
 // ================================================================
@@ -450,13 +452,22 @@ async function runAutoSync(silent = false) {
     
     let synced = 0;
     for (const update of result.updates) {
-      await setDoc(doc(db, "results", update.matchId), {
+      const docData = {
         home: Number(update.home),
         away: Number(update.away),
         updatedAt: serverTimestamp(),
         source: result.source,
-      });
-      state.results[update.matchId] = { home: Number(update.home), away: Number(update.away) };
+      };
+      // Voor knockout wedstrijden: sla ook winner op (voor gevallen zoals 1-1 na 90 min + verlenging)
+      if (update.winner) {
+        docData.winner = update.winner;
+      }
+      await setDoc(doc(db, "results", update.matchId), docData);
+      state.results[update.matchId] = { 
+        home: Number(update.home), 
+        away: Number(update.away),
+        winner: update.winner || null,
+      };
       synced++;
     }
 
@@ -1078,35 +1089,56 @@ function renderKnockoutView() {
   const rounds = ['R32', 'R16', 'QF', 'SF', 'TF', 'F'];
   let html = "";
 
+  // Onthoud welke rondes open zijn (uitgeklapt) - default is de eerste beschikbare ronde
+  if (!state.knockoutExpanded) state.knockoutExpanded = {};
+  const firstOpenRound = rounds.find(r => isRoundOpen(r, state.results));
+  // Als er nog nooit iets is uitgeklapt: default de eerste open ronde
+  const hasAnyExpanded = Object.values(state.knockoutExpanded).some(v => v);
+  if (!hasAnyExpanded && firstOpenRound) {
+    state.knockoutExpanded[firstOpenRound] = true;
+  }
+
   for (const round of rounds) {
     const open = isRoundOpen(round, state.results);
     const roundMatches = KO_MATCHES
       .filter(m => m.round === round)
       .sort((a, b) => a.date.localeCompare(b.date));
     const roundName = KO_ROUND_NAMES[round];
+    const expanded = state.knockoutExpanded[round] === true;
 
     html += `
-      <div class="ko-section ${open ? '' : 'ko-locked'}">
-        <div class="ko-section-header">
+      <div class="ko-section ${open ? '' : 'ko-locked'} ${expanded ? 'ko-expanded' : 'ko-collapsed'}">
+        <div class="ko-section-header" data-round="${round}" style="cursor: pointer;">
           <h3>${roundName}</h3>
-          ${open ? '<span class="ko-status open">Open</span>' : '<span class="ko-status closed">Nog niet beschikbaar</span>'}
+          ${open ? `<span class="ko-status open">${expanded ? 'Sluiten' : 'Open'}</span>` : '<span class="ko-status closed">Nog niet beschikbaar</span>'}
         </div>
     `;
 
-    if (!open) {
-      html += `<p class="ko-locked-msg">Deze ronde komt beschikbaar zodra de voorgaande ronde compleet is.</p>`;
-    } else {
-      html += `<div class="match-list">`;
-      for (const koMatch of roundMatches) {
-        html += renderKoMatchCard(koMatch);
+    if (expanded) {
+      if (!open) {
+        html += `<p class="ko-locked-msg">Deze ronde komt beschikbaar zodra de voorgaande ronde compleet is.</p>`;
+      } else {
+        html += `<div class="match-list">`;
+        for (const koMatch of roundMatches) {
+          html += renderKoMatchCard(koMatch);
+        }
+        html += `</div>`;
       }
-      html += `</div>`;
     }
 
     html += `</div>`;
   }
 
   container.innerHTML = html;
+
+  // Klik op sectie header om uit/in te klappen
+  container.querySelectorAll(".ko-section-header").forEach((header) => {
+    header.addEventListener("click", () => {
+      const round = header.getAttribute("data-round");
+      state.knockoutExpanded[round] = !state.knockoutExpanded[round];
+      renderKnockoutView();
+    });
+  });
 
   // Wire up score inputs
   container.querySelectorAll(".score-input").forEach((input) => {

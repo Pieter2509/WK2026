@@ -1,202 +1,167 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="nl">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>WK Poul 2026</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@400;700;800;900&family=Funnel+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wandelkaart — mijn gewandelde wegen</title>
+<meta name="description" content="Een persoonlijke kaart van alle gewandelde routes, uit Strava.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
-  <!-- LAADSCHERM (wordt direct getoond als er een opgeslagen sessie is) -->
-  <div id="loading-screen" class="screen">
-    <div class="loading-container">
-      <div class="loading-mark">WK<span class="loading-year">26</span></div>
-      <div class="loading-spinner"></div>
+
+<header class="hero">
+  <div class="hero-grid" aria-hidden="true"></div>
+  <div class="hero-glow" aria-hidden="true"></div>
+  <div class="hero-inner">
+    <p class="eyebrow">strava · live data</p>
+    <h1 class="hero-figure"><span id="stat-total-distance">–</span><span class="unit">km</span></h1>
+    <p class="hero-caption">gewandeld, over <span id="stat-total-walks">–</span> tochten in <span id="stat-total-countries">–</span> landen</p>
+  </div>
+</header>
+
+<main>
+  <section id="map-section">
+    <div id="map" role="application" aria-label="Kaart met gewandelde routes"></div>
+    <div class="legend">
+      <span class="legend-item"><i class="swatch walked"></i>eenmalige route</span>
+      <span class="legend-item"><i class="swatch unwalked"></i>overige wegen &amp; paden</span>
+      <span id="legend-groups" class="legend-groups"></span>
     </div>
-  </div>
+    <button id="snapshot-btn" class="snapshot-btn" type="button">📷 Deel kaart</button>
+    <div id="snapshot-toast" class="snapshot-toast" role="status" aria-live="polite"></div>
+  </section>
 
-  <!-- LOGIN SCHERM -->
-  <div id="login-screen" class="screen">
-    <div class="login-container">
-      <div class="login-header">
-        <div class="kicker">FIFA Wereldkampioenschap</div>
-        <h1 class="hero-title">WK<br><span class="year">2026</span></h1>
-        <div class="hero-subtitle">VS, Canada en Mexico, 11 juni tot 19 juli</div>
-      </div>
-      
-      <div class="login-card">
-        <h2 id="pool-name-display">WK Poul</h2>
-        
-        <div class="auth-tabs">
-          <button class="auth-tab active" data-mode="login" type="button">Inloggen</button>
-          <button class="auth-tab" data-mode="register" type="button">Nieuw account</button>
-        </div>
+  <section id="timeline-section">
+    <h2 class="section-title">Route-tijdlijn</h2>
+    <div class="timeline-controls">
+      <button id="timeline-play" class="timeline-btn" type="button">▶ Afspelen</button>
+      <button id="timeline-reset" class="timeline-btn" type="button">Toon alles</button>
+      <span id="timeline-date" class="timeline-date">nu</span>
+    </div>
+    <input type="range" id="timeline-slider" class="timeline-slider" min="0" max="0" value="0" step="1" aria-label="Toon routes tot deze datum">
+  </section>
 
-        <form id="login-form">
-          <input type="text" id="name-input" placeholder="Jouw naam" required maxlength="30" autocomplete="username">
-          <input type="password" id="password-input" placeholder="Wachtwoord" required minlength="4" maxlength="50" autocomplete="current-password">
-          <button type="submit" class="btn-primary">Inloggen</button>
-        </form>
-        <p class="login-hint" id="password-hint">Vul je wachtwoord in om in te loggen.</p>
-        <p class="login-hint">Tip: de site onthoudt je automatisch. Op een nieuw apparaat moet je opnieuw inloggen met dezelfde naam en wachtwoord.</p>
+  <section id="stats-section">
+    <h2 class="section-title">Peilingen</h2>
+    <div class="stat-grid">
+      <div class="stat-card">
+        <span class="stat-label">Totale afstand</span>
+        <span class="stat-value mono" id="card-distance">–</span>
+        <span class="stat-sub">kilometer</span>
       </div>
-      
-      <div class="rules-preview">
-        <h3>Puntentelling</h3>
-        <div class="rules-grid">
-          <div class="rule-item"><span class="points">5</span><span>Exacte uitslag</span></div>
-          <div class="rule-item"><span class="points">3</span><span>Juist doelsaldo</span></div>
-          <div class="rule-item"><span class="points">1</span><span>Juiste winnaar</span></div>
-        </div>
+      <div class="stat-card">
+        <span class="stat-label">Totale stijging</span>
+        <span class="stat-value mono" id="card-elevation">–</span>
+        <span class="stat-sub">hoogtemeters</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Aantal tochten</span>
+        <span class="stat-value mono" id="card-count">–</span>
+        <span class="stat-sub">wandelingen</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Langste tocht</span>
+        <span class="stat-value mono" id="card-longest">–</span>
+        <span class="stat-sub" id="card-longest-name">–</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Meeste km's op één dag</span>
+        <span class="stat-value mono" id="card-daymax">–</span>
+        <span class="stat-sub" id="card-daymax-date">–</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Landen bezocht</span>
+        <span class="stat-value mono" id="card-countries">–</span>
+        <span class="stat-sub" id="card-countries-list">–</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Dit jaar</span>
+        <span class="stat-value mono" id="card-year">–</span>
+        <span class="stat-sub">kilometer in <span id="card-year-label"></span></span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Gemiddelde snelheid</span>
+        <span class="stat-value mono" id="card-speed-avg">–</span>
+        <span class="stat-sub">km/u</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Snelste tocht</span>
+        <span class="stat-value mono" id="card-speed-max">–</span>
+        <span class="stat-sub" id="card-speed-max-name">–</span>
       </div>
     </div>
-  </div>
+  </section>
 
-  <!-- HOOFDAPP -->
-  <div id="main-app" class="screen">
-    <header class="app-header">
-      <div class="header-content">
-        <div class="brand">
-          <div class="brand-mark">WK<span class="brand-year">26</span></div>
-          <div class="brand-pool" id="pool-name-header">Poul</div>
-        </div>
-        <div class="user-info">
-          <span id="current-user-name"></span>
-          <button id="logout-btn" class="btn-ghost">Uitloggen</button>
-        </div>
+  <section id="journey-section">
+    <h2 class="section-title">Virtuele tocht</h2>
+    <div class="journey">
+      <div class="journey-labels">
+        <span class="journey-start">–</span>
+        <span class="journey-end">–</span>
       </div>
-      <nav class="tabs">
-        <button class="tab active" data-view="matches">Wedstrijden</button>
-        <button class="tab" data-view="knockout">Knockout</button>
-        <button class="tab" data-view="leaderboard">Ranglijst</button>
-        <button class="tab" data-view="standings">Groepen</button>
-        <button class="tab" data-view="admin">Beheer</button>
-      </nav>
-    </header>
+      <div class="journey-track">
+        <div class="journey-fill" id="journey-fill"></div>
+        <div class="journey-walker" id="journey-walker" aria-hidden="true">🚶</div>
+      </div>
+      <p class="journey-caption" id="journey-caption">–</p>
+    </div>
+  </section>
 
-    <main class="app-main">
-      <!-- Status banner -->
-      <div id="status-banner" class="status-banner"></div>
+  <section id="heatmap-section">
+    <h2 class="section-title">Kalenderoverzicht</h2>
+    <div class="heatmap-scroll">
+      <div id="heatmap-months" class="heatmap-months"></div>
+      <div id="heatmap-grid" class="heatmap-grid"></div>
+    </div>
+    <div class="heatmap-legend">
+      <span>minder</span>
+      <i class="heat-swatch level-0"></i>
+      <i class="heat-swatch level-1"></i>
+      <i class="heat-swatch level-2"></i>
+      <i class="heat-swatch level-3"></i>
+      <i class="heat-swatch level-4"></i>
+      <span>meer</span>
+    </div>
+  </section>
 
-      <!-- WEDSTRIJDEN VIEW -->
-      <section id="view-matches" class="view active">
-        <div class="view-header">
-          <div>
-            <h2 class="view-title">Voorspellingen</h2>
-            <p class="view-sub" id="predictions-summary">Vul je voorspellingen in voor elke wedstrijd</p>
-          </div>
-          <div class="filter-group">
-            <div class="filter-item">
-              <label for="sort-mode">Sorteren</label>
-              <select id="sort-mode">
-                <option value="group">Per groep</option>
-                <option value="date">Op datum (chronologisch)</option>
-                <option value="todo">Eerst nog te voorspellen</option>
-              </select>
-            </div>
-            <div class="filter-item">
-              <label for="group-filter">Filter</label>
-              <select id="group-filter">
-                <option value="all">Alle groepen</option>
-                <option value="A">Groep A</option>
-                <option value="B">Groep B</option>
-                <option value="C">Groep C</option>
-                <option value="D">Groep D</option>
-                <option value="E">Groep E</option>
-                <option value="F">Groep F (Nederland)</option>
-                <option value="G">Groep G</option>
-                <option value="H">Groep H</option>
-                <option value="I">Groep I</option>
-                <option value="J">Groep J</option>
-                <option value="K">Groep K</option>
-                <option value="L">Groep L</option>
-              </select>
-            </div>
-          </div>
-        </div>
-        <div id="matches-container" class="matches-container"></div>
-      </section>
+  <section id="records-section">
+    <h2 class="section-title">Persoonlijke records</h2>
+    <ol id="records-list" class="records-list"></ol>
+  </section>
 
-      <!-- KNOCKOUT VIEW -->
-      <section id="view-knockout" class="view">
-        <div class="view-header">
-          <div>
-            <h2 class="view-title">Knockout</h2>
-            <p class="view-sub" id="knockout-summary">Voorspel de knockout wedstrijden</p>
-          </div>
-        </div>
-        <div id="knockout-container" class="knockout-container"></div>
-      </section>
+  <section id="log-section">
+    <div class="log-header">
+      <h2 class="section-title">Logboek</h2>
+      <div class="log-toolbar">
+        <input type="search" id="log-search" class="log-search" placeholder="Zoek op naam of land…" aria-label="Zoek in logboek">
+        <label for="sort-select">Sorteren op</label>
+        <select id="sort-select">
+          <option value="date-desc">Datum · nieuw → oud</option>
+          <option value="date-asc">Datum · oud → nieuw</option>
+          <option value="distance-desc">Afstand · hoog → laag</option>
+          <option value="distance-asc">Afstand · laag → hoog</option>
+          <option value="elevation-desc">Stijging · hoog → laag</option>
+          <option value="elevation-asc">Stijging · laag → hoog</option>
+        </select>
+      </div>
+    </div>
+    <ol id="walk-list" class="walk-list"></ol>
+  </section>
+</main>
 
-      <!-- LEADERBOARD VIEW -->
-      <section id="view-leaderboard" class="view">
-        <div class="view-header">
-          <div>
-            <h2 class="view-title">Ranglijst</h2>
-            <p class="view-sub">Wie heeft de meeste punten?</p>
-          </div>
-        </div>
-        <div id="leaderboard-container" class="leaderboard-container"></div>
-      </section>
+<footer>
+  <p>Automatisch bijgewerkt via GitHub Actions · data uit Strava · <span id="last-updated"></span></p>
+  <a id="refresh-link" class="refresh-link" href="#" target="_blank" rel="noopener">🔄 Ververs data nu</a>
+</footer>
 
-      <!-- STANDINGS VIEW -->
-      <section id="view-standings" class="view">
-        <div class="view-header">
-          <div>
-            <h2 class="view-title">Groepsstanden</h2>
-            <p class="view-sub">Live standen op basis van officiele uitslagen</p>
-          </div>
-        </div>
-        <div id="standings-container" class="standings-container"></div>
-      </section>
-
-      <!-- ADMIN VIEW -->
-      <section id="view-admin" class="view">
-        <div class="view-header">
-          <div>
-            <h2 class="view-title">Beheer</h2>
-            <p class="view-sub">Vul officiele uitslagen in (alleen voor beheerder)</p>
-          </div>
-        </div>
-        <div id="admin-unlock" class="admin-unlock">
-          <p>Beheerderwachtwoord:</p>
-          <form id="admin-form">
-            <input type="password" id="admin-password" placeholder="Wachtwoord">
-            <button type="submit" class="btn-primary">Open beheer</button>
-          </form>
-        </div>
-        <div id="admin-panel" class="admin-panel" style="display:none;">
-          <div class="admin-notice">
-            <strong>Let op:</strong> uitslagen die je hier invoert tellen voor de poul. Iedere verandering wordt direct gesynchroniseerd.
-          </div>
-          <div id="admin-matches-container"></div>
-        </div>
-      </section>
-    </main>
-
-    <footer class="app-footer">
-      <span>WK Poul 2026, gemaakt door P. Hollanders</span>
-      <span id="connection-status" class="status-dot"></span>
-    </footer>
-  </div>
-
-  <!-- Pre-render: kies meteen welk scherm getoond moet worden, voorkomt login-flash -->
-  <script>
-    (function() {
-      try {
-        var saved = localStorage.getItem("wk2026-user");
-        var screenId = saved ? "loading-screen" : "login-screen";
-        document.getElementById(screenId).classList.add("active");
-      } catch (e) {
-        document.getElementById("login-screen").classList.add("active");
-      }
-    })();
-  </script>
-
-  <!-- App scripts -->
-  <script type="module" src="app.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="assets/app.js"></script>
 </body>
 </html>
